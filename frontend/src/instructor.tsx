@@ -6,8 +6,13 @@ import { GoodIcon, Sparkline } from "./ui";
 type Notify = (msg: string, error?: boolean) => void;
 type Prefill = { kind: string; params: Record<string, any> } | null;
 
-export function InstructorScreen({ wid, notify }: { wid: string; notify: Notify }) {
-  const [tab, setTab] = useState("dashboard");
+export function InstructorScreen({ wid, notify, tab: tabProp, setTab: setTabProp }: {
+  wid: string; notify: Notify;
+  tab?: string; setTab?: (t: string) => void;  // optionally controlled (tour)
+}) {
+  const [tabState, setTabState] = useState("dashboard");
+  const tab = tabProp ?? tabState;
+  const setTab = setTabProp ?? setTabState;
   const [prefill, setPrefill] = useState<Prefill>(null);
   const tabs = ["dashboard", "feed", "interventions", "heatmap", "gradebook", "playbook"];
 
@@ -473,7 +478,10 @@ function Heatmap({ wid }: { wid: string }) {
             <th style={{ textAlign: "left", padding: 4 }}>student</th>
             {data.los.map((lo: any) => (
               <th key={lo.id} title={lo.text}
-                  style={{ padding: 4, writingMode: "vertical-rl", maxHeight: 120 }}>
+                  style={{ padding: "4px 2px", writingMode: "vertical-rl",
+                           transform: "rotate(180deg)", height: 112,
+                           fontSize: 10, fontWeight: 500, textAlign: "left",
+                           whiteSpace: "nowrap" }}>
                 {lo.id}
               </th>
             ))}

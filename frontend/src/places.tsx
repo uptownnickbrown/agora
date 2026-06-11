@@ -393,7 +393,10 @@ export function ShopScreen({ state, wid, notify, refresh }: {
               <span className="price-tag">{l.price}c</span>
             </div>
             <div className="muted" style={{ marginTop: -4, marginBottom: 8 }}>
-              <b>{l.good_id}</b> · {l.qty} on shelf · {l.sold_total} sold all-time
+              <b>{l.good_id}</b> · {l.qty} on shelf
+              {l.sold_yesterday > 0 &&
+                <b className="heat-good"> · {l.sold_yesterday} sold last night</b>}
+              {" "}· {l.sold_total} all-time
             </div>
           </div>
         ))}

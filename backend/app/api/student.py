@@ -14,9 +14,11 @@ from ..deps import DB, CurrentPlayer, CurrentUser, WorldDep
 from ..models import (
     CrierPost,
     DbOrder,
+    EconEvent,
     Facility,
     GuildLoan,
     Inventory,
+    License,
     PlayerAchievement,
     PlayerCosmetic,
     ShopListing,
@@ -85,6 +87,14 @@ async def world_state(db: DB, world: WorldDep, player: CurrentPlayer):
                                 GuildLoan.outstanding > 0)
     )
     nudge = await tutor_svc.get_nudge(db, world, player)
+    licenses = (
+        await db.scalars(
+            select(License).where(License.world_id == world.id,
+                                  License.player_id == player.id,
+                                  ~License.revoked)
+        )
+    ).all()
+    check = await tutor_svc.next_check(db, world, player)
     goods = [
         {"id": g.id, "name": g.name, "tier": g.tier,
          "gatherable": g.gatherable, "license_required": g.license_required,
@@ -113,6 +123,8 @@ async def world_state(db: DB, world: WorldDep, player: CurrentPlayer):
         "cosmetics": [c.cosmetic_id for c in cosmetics],
         "loan": {"outstanding": loan.outstanding} if loan else None,
         "nudge": nudge,
+        "licenses": sorted({l.good_id for l in licenses}),
+        "check_available": check is not None,
     }
 
 
@@ -197,8 +209,22 @@ async def my_shop(db: DB, world: WorldDep, player: CurrentPlayer):
                                       ShopListing.player_id == player.id)
         )
     ).all()
+    # Last night's till, from the event log — the player's own demand curve.
+    sales = (
+        await db.scalars(
+            select(EconEvent.payload).where(
+                EconEvent.world_id == world.id,
+                EconEvent.actor_player_id == player.id,
+                EconEvent.kind == "shop_sale",
+                EconEvent.world_day == world.world_day - 1)
+        )
+    ).all()
+    ysold: dict[str, int] = {}
+    for pl in sales:
+        ysold[pl["good"]] = ysold.get(pl["good"], 0) + pl["qty"]
     return [{"good_id": l.good_id, "price": l.price, "qty": l.qty,
-             "sold_total": l.sold_total} for l in listings]
+             "sold_total": l.sold_total,
+             "sold_yesterday": ysold.get(l.good_id, 0)} for l in listings]
 
 
 # -- guild loan (anti-ruin) -----------------------------------------------------------

@@ -430,6 +430,40 @@ table.book td { padding: 3.5px 8px; text-align: right; }
 .build-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
 .build-card .cost { color: var(--ink-soft); font-weight: 500; font-size: 12px; }
 
+/* -- Pip's guided tour -- */
+.tour-card {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: 24px; z-index: 70;
+  display: flex; gap: 14px; align-items: flex-start;
+  width: 520px; max-width: calc(100vw - 24px);
+  background: rgba(248, 242, 226, 0.99);
+  border: 1px solid rgba(217, 203, 168, 0.7);
+  border-radius: 18px; padding: 14px 16px;
+  box-shadow: 0 18px 50px -10px rgba(10, 16, 12, 0.65);
+  animation: nudge-in 0.35s ease-out;
+}
+.tour-dot { width: 7px; height: 7px; border-radius: 50%;
+            background: rgba(59, 48, 35, 0.18); }
+.tour-dot.on { background: var(--gold); }
+.tour-card .dismiss { border: 0; background: none; box-shadow: none;
+                      color: var(--ink-soft); cursor: pointer; padding: 0 2px; }
+.tour-card .dismiss:hover { transform: none; filter: none; color: var(--ink); }
+@media (max-width: 760px) {
+  .tour-card { bottom: calc(92px + env(safe-area-inset-bottom)); }
+}
+
+/* -- pip check badge -- */
+@keyframes pip-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+}
+.pip-badge {
+  position: absolute; top: -5px; right: -5px; width: 17px; height: 17px;
+  border-radius: 50%; background: var(--gold); border: 2.5px solid #fffdf6;
+  box-shadow: 0 1px 4px rgba(18, 14, 6, 0.4);
+  animation: pip-pulse 1.6s ease-in-out infinite;
+}
+
 /* -- pip nudge entrance -- */
 @keyframes nudge-in {
   from { transform: translateY(14px); opacity: 0; }

@@ -84,9 +84,22 @@ AGORA_ENV=dev AGORA_DATABASE_URL=sqlite+aiosqlite:////tmp/agora.db \
 cd frontend && npm install && npm run dev
 ```
 
-Then: register → "Create a world" (you become its instructor) → open a private
-window, register a student, join with the code → trade against the NPC book →
-in god mode, run "daily close" to advance the world. The tutor runs canned
+**One-click demo:** seed a demo world (`cd backend && .venv/bin/python
+scripts/seed_midcourse.py --suffix demo --week 4 --demo`), then visit
+`http://localhost:5173/?demo=student` or `?demo=instructor` — you land in the
+live world as a fresh visitor merchant (or its instructor) with Pip's guided
+tour. The landing page (`/landing/`) has both buttons. Enabled in dev or with
+`AGORA_DEMO_ENABLED=true`.
+
+**QA testbeds:** `scripts/seed_midcourse.py --suffix wN --week N` seeds any
+course week with 12 bot students (accounts `qa{sfx}.*@agora-u.edu`, password
+`agora-qa`); `scripts/qa_screenshots.py` sweeps a 40+ shot matrix (both roles
+× desktop/phone × clean/mid/late course, including a scripted god-mode
+disruption) into `qa/shots/`.
+
+Or by hand: register → "Create a world" (you become its instructor) → open a
+private window, register a student, join with the code → trade against the
+NPC book → in god mode, run "daily close" to advance the world. The tutor runs canned
 until `AGORA_ANTHROPIC_API_KEY` is set (Haiku 4.5 classification, Sonnet 4.6
 tutoring, Opus 4.8 playbooks — DECISIONS.md #7).
 

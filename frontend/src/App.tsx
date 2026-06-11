@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { api, getToken, Me, PlayerState, setToken } from "./api";
 import { InstructorScreen } from "./instructor";
+import { Tour } from "./tour";
 import { Docks, MarketSquare, ShopScreen, Workshop } from "./places";
 import { PipDock, Puzzle } from "./pip";
 import { Crier, GuildHall, Leaderboards, Merchant, Recap } from "./town";
@@ -52,10 +53,26 @@ export default function App() {
   }, []);
   useEffect(() => { loadMe(); }, [loadMe]);
 
+  // One-click demo entry from the landing page: /?demo=student|instructor
+  useEffect(() => {
+    const demo = new URLSearchParams(location.search).get("demo");
+    if (!demo || getToken()) return;
+    const role = demo === "instructor" ? "instructor" : "student";
+    api.post(`/demo/${role}`).then((out) => {
+      setToken(out.token);
+      localStorage.setItem("agora_tour", out.role);
+      history.replaceState(null, "", `/#/${out.world_id}`);
+      loadMe();
+    }).catch(() => { history.replaceState(null, "", "/"); });
+  }, [loadMe]);
+
   if (!authChecked) return null;
 
+  // NOTE: the smog filter must NOT wrap fixed-position chrome (Pip, toasts,
+  // the tour) — a CSS filter turns its element into the containing block for
+  // fixed descendants, pinning them to page-bottom instead of the viewport.
   return (
-    <div className="shell smog-overlay">
+    <div className="shell">
       {!me && <AuthScreen onAuthed={loadMe} notify={notify} />}
       {me && !worldId && (
         <WorldPicker me={me} notify={notify}
@@ -226,6 +243,15 @@ function GameShell({ me, wid, notify, onLeave }: {
     writeHash(wid, on ? "god" : place);
   }, [wid, place]);
 
+  // Pip's tour for demo visitors (set by the /?demo= entry).
+  const [tour, setTour] = useState<string | null>(
+    () => localStorage.getItem("agora_tour"));
+  const endTour = useCallback(() => {
+    localStorage.removeItem("agora_tour");
+    setTour(null);
+  }, []);
+  const [itab, setItab] = useState("dashboard");
+
   const refresh = useCallback(async () => {
     try {
       setState(await api.get(`/worlds/${wid}/state`));
@@ -258,7 +284,9 @@ function GameShell({ me, wid, notify, onLeave }: {
           <span style={{ marginLeft: "auto" }} />
           <button className="quiet" onClick={onLeave}>worlds</button>
         </div>
-        <InstructorScreen wid={wid} notify={notify} />
+        <InstructorScreen wid={wid} notify={notify} tab={itab} setTab={setItab} />
+        {tour === "instructor" &&
+          <Tour role="instructor" go={setItab} onDone={endTour} />}
       </div>
     );
   }
@@ -266,6 +294,7 @@ function GameShell({ me, wid, notify, onLeave }: {
 
   return (
     <div>
+     <div className="smog-overlay">
       <div className="topbar">
         <div className="banner">AGORA</div>
         <span className="plaque">Week {state.world.week} · Day {state.world.day}</span>
@@ -355,9 +384,15 @@ function GameShell({ me, wid, notify, onLeave }: {
           {place === "recap" && <Recap wid={wid} />}
 
           <div style={{ height: 90 }} />
-          <PipDock wid={wid} nudge={state.nudge} />
         </>
       )}
+     </div>
+      {!isInstructorView && (
+        <PipDock wid={wid} nudge={state.nudge}
+                 checkAvailable={state.check_available} />
+      )}
+      {!isInstructorView && tour === "student" &&
+        <Tour role="student" go={setPlace} onDone={endTour} />}
     </div>
   );
 }

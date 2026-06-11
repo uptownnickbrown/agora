@@ -197,6 +197,17 @@ export function GuildHall({ state, wid, notify, refresh }: {
     <div className="row">
       <div className="panel grow">
         <h3>📜 Crown licenses (sealed-bid)</h3>
+        {state.licenses?.length > 0 && (
+          <div style={{ marginBottom: 6 }}>
+            {state.licenses.map((g) => (
+              <span key={g} className="tag"
+                    style={{ background: "rgba(217,169,63,0.25)",
+                             borderColor: "var(--gold)", fontWeight: 600 }}>
+                👑 you hold the {g} license
+              </span>
+            ))}
+          </div>
+        )}
         <div className="muted">When the Crier announces an auction, place your bid.
           Top bids win; you pay what you bid. Tell no one your number.</div>
         {auctions.length === 0 ? (

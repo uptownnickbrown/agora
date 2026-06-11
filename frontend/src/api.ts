@@ -79,4 +79,6 @@ export interface PlayerState {
   cosmetics: string[];
   loan: { outstanding: number } | null;
   nudge: string | null;
+  licenses: string[];
+  check_available: boolean;
 }

@@ -5,7 +5,9 @@ import { Asset, Confetti } from "./ui";
 
 type Notify = (msg: string, error?: boolean) => void;
 
-export function PipDock({ wid, nudge }: { wid: string; nudge: string | null }) {
+export function PipDock({ wid, nudge, checkAvailable }: {
+  wid: string; nudge: string | null; checkAvailable?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"chat" | "check">("chat");
   const [history, setHistory] = useState<{ role: string; content: string }[]>([]);
@@ -73,10 +75,15 @@ export function PipDock({ wid, nudge }: { wid: string; nudge: string | null }) {
           </div>
         )}
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <div className="pip-avatar" role="button" title="Ask Professor Pip"
-               style={{ cursor: "pointer" }} onClick={() => setOpen(true)}>
+          <div className="pip-avatar" role="button"
+               title={checkAvailable ? "Pip has a question for you"
+                                     : "Ask Professor Pip"}
+               style={{ cursor: "pointer", position: "relative",
+                        overflow: "visible" }}
+               onClick={() => setOpen(true)}>
             <Asset slot={nudge && !nudgeDismissed ? "pip/pip_talking" : "pip/pip_idle"}
                    glyph="🐦" size={58} alt="Professor Pip" />
+            {checkAvailable && <span className="pip-badge" />}
           </div>
         </div>
       </div>

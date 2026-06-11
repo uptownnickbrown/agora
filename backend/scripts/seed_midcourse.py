@@ -62,7 +62,7 @@ DB_URL = os.environ.get(
 PASSWORD = "agora-qa"
 
 
-async def main(days: int, suffix: str) -> None:
+async def main(days: int, suffix: str, demo: bool = False) -> None:
     tag = f"qa{suffix}"
     engine = create_async_engine(DB_URL)
     factory = async_sessionmaker(engine, expire_on_commit=False)
@@ -82,7 +82,8 @@ async def main(days: int, suffix: str) -> None:
             world = await worlds_svc.create_world(
                 db, prof, "Econ 101 (QA mid-course)", f"QA-{tag}",
                 {"expected_students": len(PERSONAS), "pacing": "calendar",
-                 "rng_seed": f"qa-testbed-{suffix or 1}"},
+                 "rng_seed": f"qa-testbed-{suffix or 1}",
+                 **({"is_demo": True} if demo else {})},
             )
             world_id, join_code = world.id, world.join_code
             bots: list[Bot] = []
@@ -133,10 +134,12 @@ if __name__ == "__main__":
     ap.add_argument("--week", type=int, default=None,
                     help="seed to mid-week N (overrides --days)")
     ap.add_argument("--suffix", default="", help="suffix for account emails (reruns)")
+    ap.add_argument("--demo", action="store_true",
+                    help="mark as THE demo world (POST /demo/* lands here)")
     args = ap.parse_args()
     days = args.days
     if args.week is not None:
         days = max(0, args.week * 7 - 3)  # lands mid-week, events fresh on charts
     if days is None:
         days = 25
-    asyncio.run(main(days, args.suffix))
+    asyncio.run(main(days, args.suffix, args.demo))

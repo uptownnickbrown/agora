@@ -11,8 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .. import template as T
 from ..models import (
     Course,
+    CrierPost,
     NPCSchedule,
     Player,
+    PriceSnapshot,
     ScheduledEvent,
     Section,
     Team,
@@ -60,6 +62,29 @@ async def create_world(
     await _seed_npcs(db, world, expected_students=n)
     for beat in T.standard_script(n):
         db.add(ScheduledEvent(world_id=world.id, **beat))
+
+    # The town existed before the students arrived: a welcome edition of the
+    # Crier, and three days of caravan-ledger prices so day-one charts breathe.
+    db.add(CrierPost(
+        world_id=world.id, world_day=0, kind="news",
+        title="The Agora opens its gates!",
+        body=("Merchants of every stripe arrive this week. The Countryside's "
+              "caravans have kept the stalls stocked through the quiet season — "
+              "their ledger prices are chalked below. Trade well, neighbors, "
+              "and mind the pigeons. One of them grades."),
+    ))
+    rng = random.Random(f"prelude:{world.config.get('rng_seed', world.id)}")
+    for good in T.GOODS.values():
+        if good.unlock_week > 1 or good.id not in T.NPC_FLOWS:
+            continue
+        px = good.anchor
+        for d in (-3, -2, -1):  # strictly before day 0 — close owns day 0+
+            px = max(2, round(px * rng.uniform(0.94, 1.06)))
+            db.add(PriceSnapshot(
+                world_id=world.id, good_id=good.id, world_day=d,
+                open=px, high=round(px * 1.05), low=round(px * 0.95),
+                close=px, volume=rng.randint(6, 18)))
+
     await emit(db, world, "world_created", {"template": T.TEMPLATE_VERSION})
     await db.flush()
     return world

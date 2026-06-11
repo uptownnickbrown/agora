@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .api import admin, auth, fun, instructor, market, student, tutor, ws
+from .api import admin, auth, demo, fun, instructor, market, student, tutor, ws
 from .config import get_settings
 from .services.common import GameError
 
@@ -46,6 +46,7 @@ app.include_router(tutor.router)
 app.include_router(instructor.router)
 app.include_router(ws.router)
 app.include_router(admin.router)
+app.include_router(demo.router)
 
 
 @app.get("/health")
