@@ -1,0 +1,88 @@
+"""FastAPI dependencies: DB session, auth, role guards, world scoping."""
+from __future__ import annotations
+
+import uuid
+from typing import Annotated, AsyncIterator
+
+from fastapi import Depends, Header, HTTPException, Path
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from .db import make_engine, make_session_factory
+from .models import Player, User, World
+from .services.auth import resolve_session
+from .services.worlds import instructor_for_world
+
+_session_factory: async_sessionmaker | None = None
+
+
+def set_session_factory(factory: async_sessionmaker) -> None:
+    global _session_factory
+    _session_factory = factory
+
+
+async def get_db() -> AsyncIterator[AsyncSession]:
+    global _session_factory
+    if _session_factory is None:
+        _session_factory = make_session_factory(make_engine())
+    async with _session_factory() as session:
+        async with session.begin():
+            yield session
+
+
+DB = Annotated[AsyncSession, Depends(get_db)]
+
+
+async def current_user(db: DB, authorization: str = Header(default="")) -> User:
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(401, "missing bearer token")
+    user = await resolve_session(db, authorization.removeprefix("Bearer "))
+    if user is None:
+        raise HTTPException(401, "invalid or expired session")
+    return user
+
+
+CurrentUser = Annotated[User, Depends(current_user)]
+
+
+async def world_from_path(db: DB, world_id: uuid.UUID = Path()) -> World:
+    world = await db.get(World, world_id)
+    if world is None:
+        raise HTTPException(404, "world not found")
+    return world
+
+
+WorldDep = Annotated[World, Depends(world_from_path)]
+
+
+async def current_player(db: DB, world: WorldDep, user: CurrentUser) -> Player:
+    from sqlalchemy import select
+
+    player = await db.scalar(
+        select(Player).where(Player.world_id == world.id, Player.user_id == user.id)
+    )
+    if player is None:
+        raise HTTPException(403, "you are not enrolled in this world")
+    return player
+
+
+CurrentPlayer = Annotated[Player, Depends(current_player)]
+
+
+async def require_instructor(db: DB, world: WorldDep, user: CurrentUser) -> User:
+    if user.is_platform_admin:
+        return user
+    if await instructor_for_world(db, world) != user.id:
+        raise HTTPException(403, "instructor access required")
+    return user
+
+
+Instructor = Annotated[User, Depends(require_instructor)]
+
+
+async def require_admin(user: CurrentUser) -> User:
+    if not user.is_platform_admin:
+        raise HTTPException(403, "platform admin required")
+    return user
+
+
+Admin = Annotated[User, Depends(require_admin)]
