@@ -1,7 +1,7 @@
 /* Professor Pip: chat dock + tutor checks + the daily puzzle. */
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./api";
-import { Asset, Confetti } from "./ui";
+import { Asset, Confetti, InlineMd } from "./ui";
 
 type Notify = (msg: string, error?: boolean) => void;
 
@@ -125,7 +125,9 @@ export function PipDock({ wid, nudge, checkAvailable }: {
                 </div>
               )}
               {history.map((m, i) => (
-                <div key={i} className={`msg ${m.role}`}>{m.content}</div>
+                <div key={i} className={`msg ${m.role}`}>
+                  <InlineMd text={m.content} />
+                </div>
               ))}
               {busy && <div className="msg tutor muted">…preening thoughtfully…</div>}
             </div>
@@ -171,7 +173,7 @@ export function PipDock({ wid, nudge, checkAvailable }: {
                     <b className={feedback.correct ? "heat-good" : "heat-bad"}>
                       {feedback.correct ? `✓ ${feedback.score}/100` : `✗ ${feedback.score}/100`}
                     </b>{" "}
-                    {feedback.feedback}
+                    <InlineMd text={feedback.feedback} />
                     <div><button className="quiet" style={{ marginTop: 6 }}
                                  onClick={loadCheck}>another</button></div>
                   </div>

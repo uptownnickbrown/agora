@@ -447,7 +447,11 @@ export function Recap({ wid }: { wid: string }) {
       ))}
       <h3 style={{ marginTop: 12 }}>Honors</h3>
       {recap.achievements.map((a: any) => (
-        <span key={a.id} className="tag">🏅 {a.name}</span>
+        <span key={a.id} className="tag">
+          {String(a.name).startsWith("trophy:")
+            ? <>🎣 {String(a.name).slice(7)}</>
+            : <>🏅 {a.name}</>}
+        </span>
       ))}
       <div className="muted" style={{ marginTop: 14, textAlign: "center",
                                       fontStyle: "italic" }}>

@@ -119,6 +119,21 @@ export function Sparkline({ points, width = 280, height = 80, stroke = "#5f7a4a"
   );
 }
 
+/** Lightweight inline markdown (bold/italic) for LLM text — Pip writes in
+    asterisks; render them instead of printing them. */
+export function InlineMd({ text }: { text: string }) {
+  const out: React.ReactNode[] = [];
+  const re = /\*\*([^*]+)\*\*|\*([^*]+)\*/g;
+  let last = 0, m: RegExpExecArray | null, k = 0;
+  while ((m = re.exec(text))) {
+    if (m.index > last) out.push(text.slice(last, m.index));
+    out.push(m[1] ? <b key={k++}>{m[1]}</b> : <i key={k++}>{m[2]}</i>);
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return <span style={{ whiteSpace: "pre-wrap" }}>{out}</span>;
+}
+
 export function Confetti() {
   const colors = ["#c4633e", "#7a9460", "#d9a93f", "#b5485d", "#aecbd8"];
   return (
