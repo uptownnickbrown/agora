@@ -492,12 +492,33 @@ table.book td { padding: 3.5px 8px; text-align: right; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 @media (max-width: 760px) {
-  .pip-dock { width: calc(100vw - 24px); right: 12px; }
-  .shell { padding: 10px; }
+  .pip-dock { width: calc(100vw - 24px); right: 12px;
+              bottom: calc(84px + env(safe-area-inset-bottom)); }
+  .shell { padding: 10px 10px 120px; }
   .topbar { top: 6px; gap: 8px; padding: 8px 12px; }
   .topbar .banner { font-size: 13px; padding: 2px 10px; }
-  .place-tile { flex: 1 1 30%; padding: 9px 4px 7px; font-size: 11px; }
-  .place-tile img { width: 36px; height: 36px; }
+  /* places become an app-style bottom dock: dark glass, swipeable */
+  .places {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
+    margin: 0; padding: 8px 10px calc(10px + env(safe-area-inset-bottom));
+    background: rgba(22, 36, 29, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(246, 239, 221, 0.12);
+    overflow-x: auto; flex-wrap: nowrap; gap: 6px;
+  }
+  .place-tile {
+    flex: 0 0 auto; min-width: 80px; padding: 6px 8px 5px;
+    background: transparent; border: none; box-shadow: none;
+    color: rgba(246, 239, 221, 0.78); font-size: 10.5px;
+  }
+  .place-tile img { width: 34px; height: 34px; }
+  .place-tile:hover { transform: none; box-shadow: none; }
+  .place-tile.active {
+    background: rgba(246, 239, 221, 0.12);
+    box-shadow: inset 0 0 0 1.5px var(--gold);
+    color: var(--parchment); border-radius: 12px;
+  }
   /* market: goods list flips to a horizontal rail; trading stays on top */
   .goods-panel { flex: 1 1 100% !important; order: 0; padding: 10px;
                  min-width: 0; max-width: 100%; }

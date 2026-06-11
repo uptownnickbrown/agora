@@ -75,7 +75,11 @@ function Dashboard({ wid, notify }: { wid: string; notify: Notify }) {
             <span className="plaque">Week {w.week}</span>
             <span className="plaque">Day {w.day}</span>
             <span className="plaque">{w.state}</span>
-            <span className="plaque">join code: <b>{w.join_code}</b></span>
+            <span className="plaque" style={{ cursor: "pointer" }}
+                  title="click to copy"
+                  onClick={() => { navigator.clipboard?.writeText(w.join_code);
+                                   notify("Join code copied — paste it in your syllabus."); }}>
+              join code: <b>{w.join_code}</b> ⧉</span>
             {w.smog > 0 && <span className="plaque">smog {w.smog}</span>}
             <span className="plaque">🐟 {w.fish_stock}</span>
           </div>

@@ -65,8 +65,16 @@ async def execute(db: AsyncSession, world: World, kind: str, params: dict,
     db.add(Intervention(world_id=world.id, kind=kind, params=params,
                         world_day=world.world_day, crier_copy=crier_copy))
     if crier_copy:
+        # First sentence is the headline; the rest is body — never echo both.
+        for sep in ("! ", ". "):
+            if sep in crier_copy:
+                head, rest = crier_copy.split(sep, 1)
+                title, body = head + sep.strip(), rest.strip()
+                break
+        else:
+            title, body = crier_copy, ""
         db.add(CrierPost(world_id=world.id, world_day=world.world_day, kind="news",
-                         title=crier_copy[:200], body=crier_copy))
+                         title=title[:200], body=body))
     await emit(db, world, "intervention", {"kind": kind, **{k: v for k, v in params.items()
                                                             if k != "player_id"}})
     return {"kind": kind, "crier": crier_copy}

@@ -427,6 +427,78 @@
     .tl-item { padding-left: 56px; }
     .tl-dot { left: 5px; width: 27px; height: 27px; font-size: 12px; }
   }
+  /* ---- v2 PDP additions ---- */
+  .numbers { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;
+             margin-top: -8px; }
+  .num-card { text-align: center; padding: 18px 26px; min-width: 150px;
+              background: rgba(246,239,221,0.07);
+              border: 1px solid rgba(246,239,221,0.14); border-radius: 16px; }
+  .num-card .n { font-family: var(--font-display); font-weight: 700;
+                 font-size: 34px; color: var(--gold); line-height: 1.1; }
+  .num-card .l { color: #d8d2bf; font-size: 13px; margin-top: 4px; }
+
+  .os-flex { display: flex; gap: 36px; align-items: flex-start; }
+  .book3d { flex: 0 0 230px; perspective: 1100px; margin: 10px auto 0; }
+  .book3d .cover {
+    width: 230px; height: 322px; border-radius: 4px 10px 10px 4px;
+    background: linear-gradient(135deg, #1f6f8b 0%, #17576d 55%, #134a5d 100%);
+    color: #f3efe2; padding: 22px 18px;
+    transform: rotateY(-14deg); transform-style: preserve-3d;
+    box-shadow: -16px 18px 36px rgba(10,16,12,0.55), inset 4px 0 8px rgba(0,0,0,0.3);
+    border-left: 7px solid #0e3949; position: relative;
+  }
+  .book3d .imprint { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+                     opacity: 0.85; }
+  .book3d .btitle { font-family: var(--font-display); font-weight: 700;
+                    font-size: 25px; line-height: 1.18; margin-top: 12px; }
+  .book3d .bsub { font-size: 13px; opacity: 0.85; margin-top: 8px; }
+  .book3d .bfoot { position: absolute; bottom: 18px; left: 18px; right: 18px;
+                   font-size: 11px; opacity: 0.8; border-top: 1px solid
+                   rgba(243,239,226,0.35); padding-top: 8px; }
+  .book3d .pairs { text-align: center; margin-top: 14px; color: #d8d2bf;
+                   font-size: 12.5px; }
+  .ostable .mech { display: block; color: var(--ink-soft); font-size: 12.5px;
+                   margin-top: 2px; font-style: italic; }
+
+  .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+           gap: 22px; align-items: start; }
+  .browser-frame { border-radius: 12px; overflow: hidden;
+                   border: 1px solid rgba(246,239,221,0.18);
+                   box-shadow: 0 24px 60px -18px rgba(10,16,12,0.7);
+                   background: #1c2f26; }
+  .browser-frame .bar { display: flex; gap: 6px; padding: 9px 12px;
+                        background: rgba(246,239,221,0.08); }
+  .browser-frame .bar i { width: 10px; height: 10px; border-radius: 50%;
+                          background: rgba(246,239,221,0.25); }
+  .browser-frame img { width: 100%; display: block; }
+  .shot-cap { color: #d8d2bf; font-size: 13.5px; margin-top: 10px;
+              text-align: center; }
+
+  table.compare { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  table.compare th { font-family: var(--font-display); font-size: 16px;
+                     padding: 10px 14px; text-align: left;
+                     border-bottom: 2px solid rgba(138,106,72,0.5); }
+  table.compare td { padding: 11px 14px; vertical-align: top;
+                     border-bottom: 1px dashed rgba(217,203,168,0.7); }
+  table.compare td:first-child { color: var(--ink-soft); font-weight: 600;
+                                 width: 22%; }
+  table.compare .agora { background: rgba(122,148,96,0.1); }
+
+  .faq details { border-bottom: 1px solid rgba(217,203,168,0.7);
+                 padding: 14px 4px; }
+  .faq summary { cursor: pointer; font-family: var(--font-display);
+                 font-weight: 600; font-size: 16.5px; list-style: none;
+                 display: flex; align-items: center; gap: 10px; }
+  .faq summary::before { content: "+"; color: var(--terracotta);
+                         font-size: 22px; font-family: var(--font-body);
+                         font-weight: 400; }
+  .faq details[open] summary::before { content: "–"; }
+  .faq details p { margin: 10px 0 2px 32px; color: var(--ink-soft);
+                   font-size: 14.5px; }
+
+  @media (max-width: 860px) {
+    .os-flex { flex-direction: column; align-items: center; }
+  }
 </style>
 </head>
 <body>
@@ -505,6 +577,20 @@
         <span class="maps-to">→ Cost curves &amp; the firm</span>
         <p>Mills, looms, and smithies have build costs (fixed), per-cycle inputs and upkeep (variable), and hired workers with genuinely diminishing returns. Students choose between high-fixed factories and low-fixed artisan shops — then live with their break-even math.</p>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= NUMBERS BAND ================= -->
+<section id="numbers" style="padding-top:0;">
+  <div class="shell">
+    <div class="numbers reveal">
+      <div class="num-card"><div class="n">7</div><div class="l">weeks, one arc</div></div>
+      <div class="num-card"><div class="n">29</div><div class="l">learning objectives<br>(OpenStax-aligned)</div></div>
+      <div class="num-card"><div class="n">36</div><div class="l">embedded tutor checks</div></div>
+      <div class="num-card"><div class="n">16</div><div class="l">one-click interventions</div></div>
+      <div class="num-card"><div class="n">&lt;30</div><div class="l">min/week of your time</div></div>
+      <div class="num-card"><div class="n">$0</div><div class="l">for students<br>(pairs with free OpenStax)</div></div>
     </div>
   </div>
 </section>
@@ -639,29 +725,41 @@
       <h2>Mapped chapter-by-chapter to OpenStax 3e</h2>
       <p>Agora pairs with the free OpenStax <em>Principles of Microeconomics 3e</em> (CC BY) and replaces most reading homework for the covered weeks. Your lecture formalizes concepts using what just happened in <em>your class's</em> economy. Chapters 14–20 you teach conventionally — Agora stays out of the way.</p>
     </div>
-    <div class="panel reveal on-parchment">
-      <div class="ostable-wrap">
-        <table class="ostable">
-          <thead>
-            <tr><th style="width:55%">OpenStax chapter</th><th>Game coverage</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>1. Welcome to Economics</td><td><span class="wkpill soft">Onboarding</span>Implicit in the onboarding week</td></tr>
-            <tr class="core"><td>2. Choice in a World of Scarcity</td><td><span class="wkpill">Week 1</span>Core</td></tr>
-            <tr class="core"><td>3. Demand and Supply</td><td><span class="wkpill">Week 2</span>Core</td></tr>
-            <tr><td>4. Labor and Financial Markets</td><td><span class="wkpill soft">Week 4</span>Partial — hiring mechanic</td></tr>
-            <tr class="core"><td>5. Elasticity</td><td><span class="wkpill">Week 3</span>Core</td></tr>
-            <tr><td>6. Consumer Choices</td><td><span class="wkpill soft">Weeks 1–3</span>Woven through</td></tr>
-            <tr class="core"><td>7. Production, Costs and Industry Structure</td><td><span class="wkpill">Week 4</span>Core</td></tr>
-            <tr class="core"><td>8. Perfect Competition</td><td><span class="wkpill">Week 5</span>Core</td></tr>
-            <tr class="core"><td>9. Monopoly</td><td><span class="wkpill">Week 5</span>Core</td></tr>
-            <tr class="core"><td>10. Monopolistic Competition &amp; Oligopoly</td><td><span class="wkpill">Week 7</span>Core</td></tr>
-            <tr><td>11. Monopoly and Antitrust Policy</td><td><span class="wkpill soft">Week 7</span>Antitrust intervention</td></tr>
-            <tr class="core"><td>12. Environmental Protection &amp; Negative Externalities</td><td><span class="wkpill">Week 6</span>Core</td></tr>
-            <tr><td>13. Positive Externalities and Public Goods</td><td><span class="wkpill soft">Week 6</span>Commons / fishery; public works option</td></tr>
-            <tr><td>14–20</td><td><span class="wkpill none">Out of scope</span>Taught conventionally in v1</td></tr>
-          </tbody>
-        </table>
+    <div class="os-flex reveal">
+      <div class="book3d">
+        <div class="cover">
+          <div class="imprint">OpenStax</div>
+          <div class="btitle">Principles of Micro&shy;economics</div>
+          <div class="bsub">3rd edition</div>
+          <div class="bfoot">Free &amp; open · CC BY 4.0</div>
+        </div>
+        <div class="pairs">The free text your students already use —<br>
+          Agora replaces the <em>problem sets</em>, not the book.</div>
+      </div>
+      <div class="panel on-parchment" style="flex:1; min-width:0;">
+        <div class="ostable-wrap">
+          <table class="ostable">
+            <thead>
+              <tr><th style="width:52%">OpenStax chapter</th><th>Lived in the game as…</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1. Welcome to Economics</td><td><span class="wkpill soft">Onboarding</span><span class="mech">arriving in the Agora with a wagonload and a specialty</span></td></tr>
+              <tr class="core"><td>2. Choice in a World of Scarcity</td><td><span class="wkpill">Week 1</span><span class="mech">a daily effort budget and the Traveling Merchant's cargo hold</span></td></tr>
+              <tr class="core"><td>3. Demand and Supply</td><td><span class="wkpill">Week 2</span><span class="mech">the Festival Rush: demand spikes, prices answer, supply chases</span></td></tr>
+              <tr><td>4. Labor and Financial Markets</td><td><span class="wkpill soft">Week 4</span><span class="mech">hiring workers at a wage (partial coverage)</span></td></tr>
+              <tr class="core"><td>5. Elasticity</td><td><span class="wkpill">Week 3</span><span class="mech">medicine stays expensive but available; tapestries crater</span></td></tr>
+              <tr><td>6. Consumer Choices</td><td><span class="wkpill soft">Weeks 1–3</span><span class="mech">woven through every budget decision</span></td></tr>
+              <tr class="core"><td>7. Production, Costs &amp; Industry Structure</td><td><span class="wkpill">Week 4</span><span class="mech">the Charter Choice: factory fixed costs vs. artisan margins</span></td></tr>
+              <tr class="core"><td>8. Perfect Competition</td><td><span class="wkpill">Week 5</span><span class="mech">thick order-book markets where no one sets the price</span></td></tr>
+              <tr class="core"><td>9. Monopoly</td><td><span class="wkpill">Week 5</span><span class="mech">glowdye licenses: a Crown auction mints real monopolists</span></td></tr>
+              <tr class="core"><td>10. Monopolistic Competition &amp; Oligopoly</td><td><span class="wkpill">Week 7</span><span class="mech">Market Wars: cartels form, hold their breath, and crack</span></td></tr>
+              <tr><td>11. Monopoly &amp; Antitrust Policy</td><td><span class="wkpill soft">Week 7</span><span class="mech">your one-click antitrust suit, reported by the Crier</span></td></tr>
+              <tr class="core"><td>12. Environmental Protection &amp; Externalities</td><td><span class="wkpill">Week 6</span><span class="mech">smog literally desaturates the town's art until taxed</span></td></tr>
+              <tr><td>13. Positive Externalities &amp; Public Goods</td><td><span class="wkpill soft">Week 6</span><span class="mech">the fishery commons collapses — then quotas bring it back</span></td></tr>
+              <tr><td>14–20</td><td><span class="wkpill none">Yours</span><span class="mech">taught conventionally — Agora stays out of the way</span></td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -727,6 +825,30 @@
         <div class="panel" style="margin-top:18px;">
           <p style="font-size:14.5px;color:var(--ink-soft);"><strong style="color:var(--ink);">Asynchronous by design.</strong> Students play 20–60 minutes a few times a week, on their own schedule. No mechanic requires being online at a specific time, and nobody is ruined by an offline weekend — bankruptcy is a soft state with a Guild "fresh start" loan. The nightly market close gives the world a heartbeat without demanding synchronous play.</p>
         </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SEE IT LIVE ================= -->
+<section id="live">
+  <div class="shell">
+    <div class="section-head reveal">
+      <span class="kicker">See it live</span>
+      <h2>This is what class looks like</h2>
+      <p>Real screens from a running section — a live order book with the drought
+         still on the chart, and the instructor dashboard reading the same world.</p>
+    </div>
+    <div class="shots reveal">
+      <div>
+        <div class="browser-frame"><div class="bar"><i></i><i></i><i></i></div>
+          <img src="/assets/marketing/shot_market.png" alt="The Market Square: live order book, price chart with the drought spike, the trade tape" width="1440" height="940" loading="lazy"></div>
+        <div class="shot-cap">A student's Market Square — the Bread Decree's shortage is right there on the chart.</div>
+      </div>
+      <div>
+        <div class="browser-frame"><div class="bar"><i></i><i></i><i></i></div>
+          <img src="/assets/marketing/shot_dashboard.png" alt="The instructor dashboard: vitals, price charts for every good, the roster" width="1440" height="940" loading="lazy"></div>
+        <div class="shot-cap">Your dashboard — vitals, every market, every student, one glance.</div>
       </div>
     </div>
   </div>
@@ -813,6 +935,64 @@
         <h3>Integrity by design</h3>
         <p>Dozens of low-stakes checks make the return on cheating terrible: there's no single exam worth outsourcing. The anomaly engine also watches for multi-accounting, collusion, and suspicious wealth transfers — the same machinery that detects cartels.</p>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= VS PROBLEM SETS ================= -->
+<section id="compare">
+  <div class="shell">
+    <div class="section-head reveal">
+      <span class="kicker">The honest comparison</span>
+      <h2>Problem sets ask about markets.<br>Agora puts students inside one.</h2>
+    </div>
+    <div class="panel on-parchment reveal">
+      <table class="compare">
+        <thead><tr><th></th><th>Traditional problem sets</th><th class="agora">Agora</th></tr></thead>
+        <tbody>
+          <tr><td>Where prices come from</td><td>Given in the problem</td><td class="agora">Emerge from your students' own order flow</td></tr>
+          <tr><td>What a supply shock is</td><td>A dashed line labeled S′</td><td class="agora">The week bread got scarce and someone cornered flour</td></tr>
+          <tr><td>Monday's lecture opens with</td><td>The answer key</td><td class="agora">A playbook of what happened in <em>your</em> class, with discussion questions keyed to real decisions</td></tr>
+          <tr><td>Assessment</td><td>Ten problems, due Friday, one grade</td><td class="agora">2–4 minute checks woven into play, mastery tracked per learning objective</td></tr>
+          <tr><td>What students remember</td><td>The formula, until the final</td><td class="agora">The semester they ran a cartel and it cracked</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FAQ ================= -->
+<section id="faq">
+  <div class="shell" style="max-width:860px;">
+    <div class="section-head reveal">
+      <span class="kicker">Fair questions</span>
+      <h2>What colleagues ask first</h2>
+    </div>
+    <div class="panel on-parchment faq reveal">
+      <details>
+        <summary>How much of my time does this really take?</summary>
+        <p>Target: under 30 minutes a week. The dashboard is a five-minute read; detected moments arrive deduplicated with one-click responses; the weekly Lecture Playbook writes itself from your class's data. The seven-week arc runs on autopilot unless you reach for a lever.</p>
+      </details>
+      <details>
+        <summary>Can students cheat?</summary>
+        <p>The economics is multiplayer — there is no answer key to copy. Checks are frequent and low-stakes, so the ROI on cheating any single one is terrible by design. Grades reward engagement and demonstrated understanding, never wealth, and the anomaly system watches for multi-accounting and suspicious transfers.</p>
+      </details>
+      <details>
+        <summary>What if some students just won't play?</summary>
+        <p>Asynchronous-first: 20–60 minutes a few times a week, no scheduled sessions, and 48 hours offline can't ruin anyone (soft bankruptcy is a fresh-start loan). Disengagement shows up on your dashboard before it becomes a grade problem — and the daily puzzle, streaks, and fishing exist precisely to make logging in the path of least resistance.</p>
+      </details>
+      <details>
+        <summary>How do grades get to my LMS?</summary>
+        <p>Participation + mastery, weights you control, CSV export today; the grade model is LTI-1.3-shaped and LTI delivery is the first fast-follow.</p>
+      </details>
+      <details>
+        <summary>What does it cost students?</summary>
+        <p>Nothing in the pilot. It pairs with the free OpenStax text (CC BY), runs in any browser including phones, and there is no real money anywhere in the game — coins are coins.</p>
+      </details>
+      <details>
+        <summary>Does it work for a small section?</summary>
+        <p>NPC liquidity auto-scales with roster size. Below ~12 students some phenomena (cartel formation, the fishery collapse) get an NPC assist so the story beats still land — you'll see a gentle "thin world" note rather than a broken week.</p>
+      </details>
     </div>
   </div>
 </section>

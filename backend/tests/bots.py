@@ -19,6 +19,7 @@ from app.services import fun as fun_svc
 from app.services import licenses as lic_svc
 from app.services import market as market_svc
 from app.services import production as prod_svc
+from app.services import shops as shops_svc
 from app.services.common import GameError
 
 
@@ -198,6 +199,25 @@ async def bot_day(db: AsyncSession, world: World, bot: Bot, day: int, week: int)
                 price = await _ask_price(db, world, "garments", rng)
             await _try(market_svc.place_order(db, world, player, "garments", "sell",
                                               garments, max(2, price), ttl_days=2))
+
+    # Shopkeeping: producers stock the posted-price shelf (week 2+) so the
+    # retail channel — and the shop UI — has life.
+    if bot.persona == "producer" and week >= 2 and rng.random() < 0.5:
+        for good in ("bread", "garments", "cloth"):
+            held = await _inv(db, world, player.id, good)
+            if held >= 3:
+                ref = await _close_or(db, world, good, T.GOODS[good].anchor)
+                await _try(shops_svc.set_listing(db, world, player, good,
+                                                 max(3, round(ref * 1.25)), 2))
+                break
+
+    # The coin sink at work: comfortable merchants buy boutique swagger.
+    if week >= 3 and player.coins > 500 and rng.random() < 0.08:
+        for cid, price in (("peacock", 900), ("fountain_small", 400),
+                           ("sign_gilt", 150), ("awning_striped", 80)):
+            if player.coins > price + 300:
+                await _try(fun_svc.buy_cosmetic(db, world, player, cid))
+                break
 
     # everyone occasionally hits the puzzle for streaks
     if rng.random() < 0.6:

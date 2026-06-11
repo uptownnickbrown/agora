@@ -128,7 +128,15 @@ async def main(days: int, suffix: str) -> None:
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--days", type=int, default=25, help="days to simulate (25 = mid wk4)")
+    ap.add_argument("--days", type=int, default=None,
+                    help="days to simulate (0 = clean-slate day one)")
+    ap.add_argument("--week", type=int, default=None,
+                    help="seed to mid-week N (overrides --days)")
     ap.add_argument("--suffix", default="", help="suffix for account emails (reruns)")
     args = ap.parse_args()
-    asyncio.run(main(args.days, args.suffix))
+    days = args.days
+    if args.week is not None:
+        days = max(0, args.week * 7 - 3)  # lands mid-week, events fresh on charts
+    if days is None:
+        days = 25
+    asyncio.run(main(days, args.suffix))

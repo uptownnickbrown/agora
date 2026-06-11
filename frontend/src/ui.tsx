@@ -26,9 +26,26 @@ export function GoodIcon({ good, size = 22 }: { good: string; size?: number }) {
 }
 
 export function Coins({ amount }: { amount: number }) {
+  // Count toward the new amount — money you can watch arrive.
+  const [shown, setShown] = useState(amount);
+  useEffect(() => {
+    const from = shown;
+    if (from === amount) return;
+    const t0 = performance.now(), dur = 600;
+    let raf = 0;
+    const tick = (t: number) => {
+      const k = Math.min(1, (t - t0) / dur);
+      const eased = 1 - (1 - k) * (1 - k);
+      setShown(Math.round(from + (amount - from) * eased));
+      if (k < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [amount]);
   return (
     <span className="stat" title="coppers">
-      <span className="coin" /> <b>{amount.toLocaleString()}</b>
+      <span className="coin" /> <b>{shown.toLocaleString()}</b>
     </span>
   );
 }

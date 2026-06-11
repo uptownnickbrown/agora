@@ -317,6 +317,23 @@ export function Merchant({ wid, notify, refresh }: {
     setPlan((p) => ({ ...p, [port]: { ...(p[port] || {}), [good]: qty } }));
   }
 
+  // Live route math — the arbitrage lesson, visible while you plan.
+  const legPorts: string[] = inst.ports.slice(0, -1);
+  let projected = 0;
+  const cargo: Record<string, number> = {};
+  const spend: Record<string, number> = {};
+  legPorts.forEach((port: string, i: number) => {
+    const next = inst.ports[i + 1];
+    let c = 0, sp = 0;
+    for (const g of inst.goods) {
+      const q = plan[port]?.[g] || 0;
+      c += q; sp += q * inst.prices[port][g];
+      projected += q * (inst.prices[next][g] - inst.prices[port][g]);
+    }
+    cargo[port] = c; spend[port] = sp;
+  });
+  const overloaded = legPorts.some((p: string) => cargo[p] > inst.capacity);
+
   async function submit() {
     const legs = inst.ports.slice(0, -1).map((port: string) => ({
       port, buy: Object.fromEntries(
@@ -341,7 +358,17 @@ export function Merchant({ wid, notify, refresh }: {
       <div className="row" style={{ marginTop: 10 }}>
         {inst.ports.map((port: string, i: number) => (
           <div key={port} className="panel grow" style={{ padding: 10 }}>
-            <h4>{i + 1}. {port}</h4>
+            <h4 style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {i + 1}. {port}
+              {i < inst.ports.length - 1 && (
+                <span className="tag" style={cargo[port] > inst.capacity
+                  ? { background: "var(--rose)", color: "#fff", borderColor: "transparent" }
+                  : {}}>
+                  🧺 {cargo[port]}/{inst.capacity}
+                  {spend[port] > 0 && <> · {spend[port]}c</>}
+                </span>
+              )}
+            </h4>
             <table className="book">
               <thead><tr><th style={{ textAlign: "left" }}>good</th><th>price</th>
                 {i < inst.ports.length - 1 && <th>buy</th>}</tr></thead>
@@ -363,7 +390,16 @@ export function Merchant({ wid, notify, refresh }: {
           </div>
         ))}
       </div>
-      <button style={{ marginTop: 10 }} onClick={submit}>Ride the route</button>
+      <div className="row" style={{ alignItems: "center", marginTop: 12 }}>
+        <button onClick={submit} disabled={overloaded}>Ride the route</button>
+        <span className={projected > 0 ? "heat-good" : projected < 0 ? "heat-bad" : "muted"}
+              style={{ fontSize: 15 }}>
+          {overloaded ? "⚠️ a camel can only carry so much"
+            : projected !== 0
+              ? `projected profit: ${projected > 0 ? "+" : ""}${projected} coppers`
+              : "plan your cargo — buy where it's cheap, it sells at the next stop"}
+        </span>
+      </div>
     </div>
   );
 }

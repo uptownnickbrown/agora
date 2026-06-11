@@ -290,6 +290,32 @@ function GameShell({ me, wid, notify, onLeave }: {
         <InstructorScreen wid={wid} notify={notify} />
       ) : (
         <>
+          {state.world.state === "onboarding" && (
+            <div className="panel" style={{ marginBottom: 16, display: "flex",
+                                            gap: 18, alignItems: "center",
+                                            flexWrap: "wrap" }}>
+              <Asset slot="pip/pip_talking" glyph="🐦" size={92}
+                     alt="Professor Pip welcomes you" />
+              <div style={{ flex: "1 1 320px" }}>
+                <h3 style={{ marginBottom: 4 }}>
+                  Welcome to the Agora, {state.player.merchant}!
+                </h3>
+                <div className="muted" style={{ marginBottom: 10 }}>
+                  You arrive with a wagon of <b>{state.player.aptitude}</b> ⭐ —
+                  your gathering specialty. Coins come from trading what you have
+                  for what the town wants.
+                </div>
+                <div className="row" style={{ gap: 8 }}>
+                  <button onClick={() => setPlace("merchant")}>
+                    🐫 Ride with the Traveling Merchant</button>
+                  <button className="quiet" onClick={() => setPlace("market")}>
+                    ⚖️ Browse the Market</button>
+                  <button className="quiet" onClick={() => setPlace("puzzle")}>
+                    🧮 Today's puzzle</button>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="places">
             {PLACES.map(([id, label, glyph]) => (
               <div key={id} className={`place-tile ${place === id ? "active" : ""}`}
