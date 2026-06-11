@@ -11,6 +11,14 @@ Changes: objectives were paraphrased, condensed, and re-mapped onto the
 Agora seven-week arc. The tutor-check question bank is original work written
 for this project.
 
+## Game art
+
+All images under `frontend/public/assets/` were generated with Google Gemini
+(`gemini-3-pro-image`) via the pipeline in `scripts/generate_assets.py` and
+`scripts/assetlib.py`, then post-processed (chroma-key background removal,
+crop, resize) for this project. The `ui/felt_texture.png` tile and the PWA
+icon compositions (`brand/icon_192.png`, `brand/icon_512.png`) are procedural.
+
 ## Design lineage
 
 The classroom-experiment designs behind the weekly events (continuous double

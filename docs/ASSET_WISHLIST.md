@@ -1,5 +1,11 @@
 # Assets I Wish I Had
 
+> **Status: all slots below are filled.** Every asset was generated with
+> Gemini (`gemini-3-pro-image`) — see `scripts/generate_assets.py` for the
+> full reproducible prompt set and `scripts/assetlib.py` for the
+> chroma-key/crop pipeline. Re-run a single family with e.g.
+> `python3 scripts/generate_assets.py pip` (needs `GEMINI_API_KEY` in `.env`).
+
 The frontend ships with an `Asset` component (`frontend/src/ui.tsx`) that loads
 `frontend/public/assets/<slot>.png` and **gracefully falls back to an emoji
 glyph** when the file is missing. Every slot below is therefore already wired —
