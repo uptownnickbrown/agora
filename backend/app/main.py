@@ -53,7 +53,8 @@ class CommitBeforeResponse:
 app.add_middleware(CommitBeforeResponse)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[o.strip() for o in get_settings().cors_origins.split(",")
+                   if o.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -7,6 +8,19 @@ class Settings(BaseSettings):
     app_name: str = "agora"
     env: str = "dev"
     database_url: str = "postgresql+asyncpg://agora:agora@localhost:5432/agora"
+    # Comma-separated browser origins allowed to call the API.
+    cors_origins: str = "http://localhost:5173"
+
+    @field_validator("database_url")
+    @classmethod
+    def _async_driver(cls, v: str) -> str:
+        # Managed Postgres (Railway et al.) hands out bare postgres:// URLs;
+        # the app needs the async driver spelled out.
+        if v.startswith("postgres://"):
+            v = "postgresql://" + v.removeprefix("postgres://")
+        if v.startswith("postgresql://"):
+            v = "postgresql+asyncpg://" + v.removeprefix("postgresql://")
+        return v
     redis_url: str = "redis://localhost:6379/0"
     anthropic_api_key: str = ""
     # Allows POST /demo/* to mint visitor sessions in the demo world.

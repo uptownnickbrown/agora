@@ -18,7 +18,11 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 url = os.environ.get("AGORA_DATABASE_URL", "postgresql+psycopg://agora:agora@localhost:5432/agora")
+if url.startswith("postgres://"):  # managed-PG bare scheme
+    url = "postgresql://" + url.removeprefix("postgres://")
 url = url.replace("+asyncpg", "+psycopg")
+if url.startswith("postgresql://"):
+    url = "postgresql+psycopg://" + url.removeprefix("postgresql://")
 config.set_main_option("sqlalchemy.url", url)
 
 target_metadata = Base.metadata
