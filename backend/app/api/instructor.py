@@ -15,8 +15,6 @@ from ..models import (
     Intervention,
     Player,
     PriceSnapshot,
-    ScheduledEvent,
-    World,
     WorldDayStat,
 )
 from ..pedagogy.grades import gradebook, gradebook_csv, mastery_heatmap
@@ -222,3 +220,63 @@ async def grade_weights(body: GradeWeightsIn, db: DB, world: WorldDep,
                                "mastery": body.mastery}
     world.config = config
     return config["grade_weights"]
+
+
+@router.get("/worlds/{world_id}/instructor/scores")
+async def scores(db: DB, world: WorldDep, instructor: Instructor):
+    """Stable, LMS-agnostic per-student scores keyed on institutional email.
+    An LTI 1.3 AGS pusher can iterate this verbatim later."""
+    rows = await gradebook(db, world)
+    return [{"email": r["email"], "score": round(r["grade"] * 100, 1),
+             "max_score": 100, "world_week": world.current_week}
+            for r in rows if r["email"]]
+
+
+# -- the Monday Brief (weekly email digest) -----------------------------------
+
+def _digest_week(world, week: int | None) -> int:
+    return week or max(1, world.current_week - 1)
+
+
+@router.get("/worlds/{world_id}/instructor/digest/preview")
+async def digest_preview(db: DB, world: WorldDep, instructor: Instructor,
+                         week: int | None = None):
+    from ..services.digest import build_digest
+
+    msg = await build_digest(db, world, _digest_week(world, week))
+    return {"subject": msg.subject, "markdown": msg.text, "to": msg.to,
+            "enabled": (world.config or {}).get("email_digest", True)}
+
+
+@router.post("/worlds/{world_id}/instructor/digest/send")
+async def digest_send(db: DB, world: WorldDep, instructor: Instructor,
+                      week: int | None = None):
+    """Synchronous build + send, like /playbook (the UI tolerates the wait)."""
+    from ..services.digest import build_digest
+    from ..services.email import send_logged
+
+    wk = _digest_week(world, week)
+    msg = await build_digest(db, world, wk)
+    await send_logged(db, msg, kind="digest", world_id=world.id, ref=f"week:{wk}")
+    config = dict(world.config or {})
+    config["digest_sent_week"] = max(config.get("digest_sent_week", 0), wk)
+    world.config = config
+    return {"sent_to": msg.to, "week": wk}
+
+
+class DigestSettingsIn(BaseModel):
+    enabled: bool
+
+
+@router.get("/worlds/{world_id}/instructor/digest/settings")
+async def digest_settings_get(world: WorldDep, instructor: Instructor):
+    config = world.config or {}
+    return {"enabled": config.get("email_digest", True),
+            "last_sent_week": config.get("digest_sent_week", 0)}
+
+
+@router.post("/worlds/{world_id}/instructor/digest/settings")
+async def digest_settings(body: DigestSettingsIn, db: DB, world: WorldDep,
+                          instructor: Instructor):
+    world.config = {**(world.config or {}), "email_digest": body.enabled}
+    return {"enabled": body.enabled}

@@ -43,9 +43,23 @@ async def login(body: LoginIn, db: DB):
 @router.post("/magic/request")
 async def magic_request(body: MagicIn, db: DB):
     token = await auth_svc.request_magic_link(db, body.email)
-    # Dev mode returns the token; production sends an email instead.
-    if get_settings().env in ("dev", "test"):
+    settings = get_settings()
+    # Dev convenience: console email + dev env returns the token inline.
+    if settings.env in ("dev", "test") and settings.email_provider == "console":
         return {"sent": True, "dev_token": token}
+    from ..services.email import EmailError, EmailMessage, send_logged
+
+    link = f"{settings.app_base_url.rstrip('/')}/?magic={token}"
+    try:
+        await send_logged(
+            db,
+            EmailMessage(to=body.email, subject="Your Agora sign-in link",
+                         text=f"Sign in to Agora: {link}\n\n"
+                              "The link expires in 30 minutes. If you didn't "
+                              "request it, ignore this email."),
+            kind="magic_link")
+    except EmailError:
+        pass  # same response either way: no account/deliverability enumeration
     return {"sent": True}
 
 
@@ -80,7 +94,7 @@ async def me(user: CurrentUser, db: DB):
     ).all()
     for w in owned:
         if str(w.id) not in seen:
-            worlds.append({"world_id": str(w.id), "merchant": "⚖️ instructor",
+            worlds.append({"world_id": str(w.id), "merchant": "Instructor",
                            "week": w.current_week, "state": w.state})
     return {"user_id": str(user.id), "email": user.email,
             "display_name": user.display_name, "is_instructor": user.is_instructor,

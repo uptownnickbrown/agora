@@ -8,7 +8,6 @@ configured or the per-World daily budget is exhausted.
 from __future__ import annotations
 
 import random
-from datetime import datetime, timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession

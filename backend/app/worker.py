@@ -66,6 +66,14 @@ async def daily_market_close(ctx: dict) -> int:
     return closed
 
 
+async def email_sweep(ctx: dict) -> int:
+    """Send due instructor digests (stamped by advance_week). Build + send
+    happen outside the close transaction; the sweep is idempotent."""
+    from .services.digest import process_due_digests
+
+    return await process_due_digests(_session_factory())
+
+
 async def fast_tick(ctx: dict) -> int:
     import logging
 
@@ -85,9 +93,12 @@ async def fast_tick(ctx: dict) -> int:
 
 
 class WorkerSettings:
-    functions = [daily_market_close, fast_tick]
+    functions = [daily_market_close, fast_tick, email_sweep]
     cron_jobs = [
         cron(daily_market_close, hour={4}, minute={59}),  # 11:59pm ET ~= 04:59 UTC
         cron(fast_tick, minute=set(range(0, 60, 5))),
+        # Every 10 min: digests land within minutes of a week boundary,
+        # whether the close cron or a manual advance crossed it.
+        cron(email_sweep, minute={9, 19, 29, 39, 49, 59}),
     ]
     redis_settings = RedisSettings.from_dsn(get_settings().redis_url)

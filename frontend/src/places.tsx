@@ -94,8 +94,10 @@ export function MarketSquare({ state, wid, notify, refresh }: {
                  role="button">
               <GoodIcon good={g.id} />
               <span style={{ fontWeight: good === g.id ? 700 : 400 }}>{g.name}</span>
-              {g.aptitude && <span title="your aptitude">⭐</span>}
-              {g.license_required && <span title="license required">📜</span>}
+              {g.aptitude && <Asset slot="ui/icon_star" glyph="⭐" size={14}
+                                    alt="your aptitude" />}
+              {g.license_required && <Asset slot="ui/icon_license" glyph="📜"
+                                            size={14} alt="license required" />}
               <span style={{ marginLeft: "auto", opacity: 0.8 }}>
                 {state.inventory[g.id] || 0}
               </span>
@@ -106,9 +108,12 @@ export function MarketSquare({ state, wid, notify, refresh }: {
 
       <div className="col grow market-main">
         <div className="panel">
-          <h3><GoodIcon good={good} size={26} /> {good} — price chart</h3>
-          {ceiling != null && <div className="heat-bad">⚖️ Price ceiling: {ceiling}</div>}
-          {floor != null && <div className="heat-good">⚖️ Price floor: {floor}</div>}
+          <h3><GoodIcon good={good} size={26} />
+            {" "}{good.charAt(0).toUpperCase() + good.slice(1)} — price chart</h3>
+          {ceiling != null && <div className="heat-bad">
+            <Asset slot="ui/icon_scale" glyph="⚖️" size={15} /> Price ceiling: {ceiling}</div>}
+          {floor != null && <div className="heat-good">
+            <Asset slot="ui/icon_scale" glyph="⚖️" size={15} /> Price floor: {floor}</div>}
           <Sparkline points={closes} width={560} height={130}
                      refLine={ceiling ?? floor ?? null}
                      refLabel={ceiling != null ? `ceiling ${ceiling}`
@@ -148,7 +153,7 @@ export function MarketSquare({ state, wid, notify, refresh }: {
                 <span>{o.remaining}/{o.qty} @ {o.price}</span>
                 <span className="muted">expires day {o.expires_day}</span>
                 <button className="quiet" style={{ padding: "2px 10px" }}
-                        onClick={() => cancel(o.id)}>withdraw</button>
+                        onClick={() => cancel(o.id)}>Withdraw</button>
               </div>
             ))}
           </>}
@@ -224,7 +229,7 @@ export function Workshop({ state, wid, notify, refresh }: {
     ["flour", "2 grain"], ["lumber", "2 wood"], ["cloth", "2 wool"],
     ["bread", "2 flour"], ["garments", "2 cloth"], ["medicine", "2 herbs"],
     ["tapestries", "3 cloth"], ["iron", "2 ore"], ["tools", "1 iron + 1 lumber"],
-    ["glowdye", "2 herbs + 1 ore 📜"],
+    ["glowdye", "2 herbs + 1 ore (license)"],
   ];
   const FACILITIES: [string, string, number][] = [
     ["farm", "Farm Plot → grain", 120], ["pasture", "Pasture → wool", 120],
@@ -233,14 +238,15 @@ export function Workshop({ state, wid, notify, refresh }: {
     ["loom", "Loom → cloth", 120], ["smelter", "Smelter → iron", 120],
     ["bakery", "Bakery → bread", 120], ["tailor", "Tailor → garments", 120],
     ["apothecary", "Apothecary → medicine", 120], ["atelier", "Atelier → tapestries", 120],
-    ["smithy", "Smithy → tools", 120], ["dyeworks", "Dyeworks → glowdye 📜", 120],
+    ["smithy", "Smithy → tools", 120],
+    ["dyeworks", "Dyeworks → glowdye (license)", 120],
   ];
   const unlockedGoods = new Set(state.goods.map((g) => g.id));
 
   return (
     <div className="row">
       <div className="panel grow">
-        <h3>🧺 Gathering</h3>
+        <h3><Asset slot="ui/icon_basket" glyph="🧺" size={20} /> Gathering</h3>
         <div className="row" style={{ alignItems: "center" }}>
           <select value={gatherGood} onChange={(e) => setGatherGood(e.target.value)}>
             {gatherables.map((g) => (
@@ -255,9 +261,9 @@ export function Workshop({ state, wid, notify, refresh }: {
           <button onClick={gather}>Gather</button>
         </div>
         <div className="muted">Your aptitude ⭐ yields triple. Effort is the one thing
-          you can never buy more of today — spend it like it matters, because it does.</div>
+          you can't buy more of today, so spend it like it matters.</div>
         <hr className="divider" />
-        <h3>🔨 Hand-crafting</h3>
+        <h3><Asset slot="ui/icon_mallet" glyph="🔨" size={20} /> Hand-crafting</h3>
         {RECIPES.filter(([out]) => unlockedGoods.has(out)).map(([out, needs]) => (
           <div key={out} style={{ display: "flex", gap: 8, alignItems: "center",
                                   marginBottom: 5 }}>
@@ -265,7 +271,7 @@ export function Workshop({ state, wid, notify, refresh }: {
             <span style={{ width: 100 }}>{out}</span>
             <span className="muted" style={{ flex: 1 }}>{needs}</span>
             <button className="wood" style={{ padding: "4px 12px" }}
-                    onClick={() => craft(out)}>craft</button>
+                    onClick={() => craft(out)}>Craft</button>
           </div>
         ))}
       </div>
@@ -274,10 +280,10 @@ export function Workshop({ state, wid, notify, refresh }: {
         <img className="scene-banner" src="/assets/places/workshop_scene.png"
              alt="" onError={(e) =>
                (e.target as HTMLImageElement).style.setProperty("display", "none")} />
-        <h3>🏭 Your facilities</h3>
+        <h3><Asset slot="ui/icon_windmill" glyph="🏭" size={20} /> Your facilities</h3>
         {state.facilities.length === 0 &&
-          <div className="muted">No facilities yet. A building works while you sleep —
-            that's the whole point of fixed costs.</div>}
+          <div className="muted">No facilities yet. A building works while you sleep.
+            That's the whole point of fixed costs.</div>}
         {state.facilities.map((f) => (
           <div key={f.id} className="facility-card">
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -287,15 +293,15 @@ export function Workshop({ state, wid, notify, refresh }: {
                 <div className="muted" style={{ fontSize: 12 }}>
                   tier {f.tier} · makes {f.output}
                   {f.workers > 0 && ` · ${f.workers} workers`}
-                  {f.scrubber && " · 🌬️ scrubber"}
+                  {f.scrubber && " · scrubber fitted"}
                 </div>
               </div>
             </div>
             <div className="row" style={{ marginTop: 8, alignItems: "center" }}>
               <button className="quiet" onClick={() =>
                 facilityAction(`/worlds/${wid}/facilities/${f.id}/upgrade`)}>
-                ⬆ upgrade</button>
-              <label className="muted">workers:
+                Upgrade</button>
+              <label className="muted">Workers:
                 <input type="number" min={0} max={12} defaultValue={f.workers}
                        style={{ width: 56, marginLeft: 4 }}
                        onBlur={(e) => facilityAction(
@@ -305,12 +311,12 @@ export function Workshop({ state, wid, notify, refresh }: {
               {!f.scrubber && state.world.week >= 6 &&
                 <button className="quiet" onClick={() =>
                   facilityAction(`/worlds/${wid}/facilities/${f.id}/scrubber`)}>
-                  🌬️ fit scrubber (250)</button>}
+                  Fit scrubber (250)</button>}
             </div>
           </div>
         ))}
         <hr className="divider" />
-        <h3>🏗️ Build</h3>
+        <h3><Asset slot="places/workshop" glyph="🏗️" size={20} /> Build</h3>
         <div className="muted" style={{ marginBottom: 8 }}>
           120 coppers of fixed cost, working for you every night thereafter.
         </div>
@@ -360,10 +366,11 @@ export function ShopScreen({ state, wid, notify, refresh }: {
   return (
     <div className="row">
       <div className="panel grow">
-        <h3>🏪 Your shop window</h3>
+        <h3><Asset slot="places/shop" glyph="🏪" size={20} /> Your shop window</h3>
         <div className="muted" style={{ marginBottom: 8 }}>
-          Posted prices, browsing customers. Every night the town samples your
-          prices — your own little demand curve, in the wild.
+          Post your prices and the town browses them every night. The sales
+          that follow trace out your own little demand curve, live and in
+          the wild.
         </div>
         <div className="row" style={{ alignItems: "center" }}>
           <select value={good} onChange={(e) => setGood(e.target.value)}>
@@ -389,7 +396,7 @@ export function ShopScreen({ state, wid, notify, refresh }: {
               {l.qty > 9 && <span style={{ color: "var(--parchment)",
                 fontFamily: "var(--font-display)" }}>+{l.qty - 9}</span>}
               {l.qty === 0 && <span style={{ color: "var(--parchment)", opacity: 0.7,
-                fontStyle: "italic", fontSize: 13 }}>sold out — restock?</span>}
+                fontStyle: "italic", fontSize: 13 }}>sold out. Restock?</span>}
               <span className="price-tag">{l.price}c</span>
             </div>
             <div className="muted" style={{ marginTop: -4, marginBottom: 8 }}>
@@ -406,19 +413,19 @@ export function ShopScreen({ state, wid, notify, refresh }: {
               <span style={{ color: "var(--parchment)", opacity: 0.7,
                              fontStyle: "italic" }}>bare boards…</span>
             </div>
-            <div className="muted">Empty shelves, merchant. Stock something —
-              {sellable.length > 0 && <> you're holding {sellable.slice(0, 3)
-                .map((g) => g.name).join(", ")}.</>}
+            <div className="muted">Empty shelves, merchant. Stock something.
+              {sellable.length > 0 && <> You're holding {sellable.slice(0, 3)
+                .map((g) => g.name).join(", ")}, ready to shelve.</>}
             </div>
           </div>
         )}
       </div>
       <div className="panel" style={{ flex: "0 1 300px" }}>
-        <h3>✨ Your finery</h3>
+        <h3><Asset slot="ui/icon_finery" glyph="✨" size={20} /> Your finery</h3>
         <div className="kicker">cosmetics</div>
         {state.cosmetics.length === 0 &&
-          <div className="muted">None yet — earn prestige, or buy swagger at the
-            Luxury Boutique in the Guild Hall.</div>}
+          <div className="muted">None yet. Earn prestige, or buy a little swagger
+            at the Luxury Boutique in the Guild Hall.</div>}
         <div className="row" style={{ gap: 8 }}>
           {state.cosmetics.map((c) => (
             <div key={c} style={{ textAlign: "center", width: 76 }}>
@@ -429,8 +436,9 @@ export function ShopScreen({ state, wid, notify, refresh }: {
         </div>
         <div className="kicker" style={{ marginTop: 10 }}>achievements</div>
         {state.achievements.length === 0 &&
-          <div className="muted">none yet — go achieve something</div>}
-        {state.achievements.map((a) => <span key={a} className="tag">🏅 {a}</span>)}
+          <div className="muted">None yet. Go achieve something.</div>}
+        {state.achievements.map((a) => <span key={a} className="tag">
+          <Asset slot="ui/icon_medal" glyph="🏅" size={13} /> {a}</span>)}
       </div>
     </div>
   );
@@ -475,7 +483,7 @@ export function Docks({ state, wid, notify, refresh }: {
   return (
     <div className="row">
       <div className="panel grow" style={{ maxWidth: 640 }}>
-        <h3>🎣 The Docks</h3>
+        <h3><Asset slot="places/docks" glyph="🎣" size={20} /> The Docks</h3>
         <div className="docks-scene">
           <img src="/assets/places/docks_scene.png" alt="The docks at dusk" />
           {casting && <span className="ripple" />}
@@ -506,7 +514,7 @@ export function Docks({ state, wid, notify, refresh }: {
                   <Asset slot={`trophies/${TROPHY_SLUGS[result.trophy] || ""}`}
                          glyph="🏆" size={84} alt={result.trophy} />
                   <div style={{ fontFamily: "var(--font-display)", fontSize: 17 }}>
-                    🏆 {result.trophy}!</div>
+                    {result.trophy}!</div>
                 </div>
               )}
               <div className="muted" style={{ fontStyle: "italic", marginTop: 6 }}>
@@ -521,7 +529,7 @@ export function Docks({ state, wid, notify, refresh }: {
 
       <div className="col" style={{ flex: "0 1 300px" }}>
         <div className="panel">
-          <h3>🏆 Trophy wall</h3>
+          <h3><Asset slot="ui/icon_trophy" glyph="🏆" size={20} /> Trophy wall</h3>
           <div className="trophy-wall">
             {Object.entries(TROPHY_SLUGS).map(([name, slug]) => (
               <div key={name}
@@ -542,8 +550,12 @@ export function Docks({ state, wid, notify, refresh }: {
             <h3>Today's casts</h3>
             {catches.map((c, i) => (
               <div key={i} className="muted" style={{ fontSize: 13 }}>
-                {c.qty > 0 ? `🐟 ${c.qty} (${(c.weight / 10).toFixed(0)}dg)` : "— bare hook"}
-                {c.trophy ? ` · 🏆 ${c.trophy}` : ""}
+                {c.qty > 0
+                  ? <><GoodIcon good="fish" size={14} /> {c.qty}{" "}
+                      ({(c.weight / 10).toFixed(0)}dg)</>
+                  : "bare hook"}
+                {c.trophy && <> · <Asset slot="ui/icon_trophy" glyph="🏆"
+                                         size={13} /> {c.trophy}</>}
               </div>
             ))}
           </div>

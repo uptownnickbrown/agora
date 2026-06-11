@@ -11,7 +11,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .. import template as T
 from ..config import get_settings
 from ..models import (
-    CheckAttempt,
     DetectedMoment,
     Intervention,
     MasteryEstimate,
@@ -95,8 +94,11 @@ async def build_playbook(db: AsyncSession, world: World, week: int | None = None
     weak_los = sorted(lo_rows, key=lambda r: r[1])[:4]
 
     concept, base_questions = WEEK_CONCEPTS.get(week, ("", []))
+    # First sentence only: detector summaries carry their own teaching
+    # commentary, which would double up against the question.
     moment_questions = [
-        f"Day {m.world_day}: {m.summary} — what model explains this?"
+        f"Day {m.world_day}: {m.summary.split('. ')[0].rstrip('.')}. "
+        f"Which model explains it?"
         for m in moments[:3]
     ]
     playbook = {
@@ -149,20 +151,22 @@ async def _render_markdown(world: World, pb: dict) -> str:
     lines = [f"# Lecture Playbook — Week {pb['week']}",
              f"*{pb['concept']}*", "",
              "## What happened in your economy"]
-    for item in pb["what_happened"] or [{"day": "-", "kind": "-",
-                                         "summary": "A quiet week — markets converged peacefully. That's a lesson too."}]:
+    quiet = ("A quiet week: the markets converged without drama, "
+             "which is a lesson in its own right.")
+    for item in pb["what_happened"] or [{"day": "-", "kind": "-", "summary": quiet}]:
         lines.append(f"- **Day {item['day']}** ({item['kind']}): {item['summary']}")
     if pb["interventions"]:
         lines += ["", "## Interventions you ran"]
         for i in pb["interventions"]:
-            lines.append(f"- Day {i['day']}: {i['kind']} — “{i['crier']}”")
+            kind = i["kind"].replace("_", " ")
+            lines.append(f"- Day {i['day']}, {kind}: “{i['crier']}”")
     lines += ["", "## Discussion questions"]
     for q in pb["discussion_questions"]:
         lines.append(f"1. {q}")
     if pb["misconceptions"]:
         lines += ["", "## Misconceptions to address (lowest class mastery)"]
         for m in pb["misconceptions"]:
-            lines.append(f"- {m['text']} — class average {m['avg_mastery_pct']}%")
+            lines.append(f"- {m['text']} (class average {m['avg_mastery_pct']}%)")
     lines += ["", "## Suggested next moves"]
     for s in pb["suggested_next"]:
         lines.append(f"- {s}")

@@ -145,7 +145,8 @@ def main(out, only):
         p.goto(BASE); p.wait_for_timeout(800)
         s.shot(p, "w4-40-dashboard", settle=1200)
         for tab, name in [("feed", "w4-41-feed"), ("interventions", "w4-42-interventions"),
-                          ("heatmap", "w4-43-heatmap"), ("gradebook", "w4-44-gradebook")]:
+                          ("Mastery", "w4-43-heatmap"), ("gradebook", "w4-44-gradebook"),
+                          ("playbook", "w4-45-playbook")]:
             try:
                 s.place(p, tab); s.shot(p, name)
             except Exception as e:

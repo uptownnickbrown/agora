@@ -18,7 +18,6 @@ from ..models import (
     FishingCatch,
     GuildLoan,
     Player,
-    PlayerAchievement,
     PriceSnapshot,
     ScheduledEvent,
     Streak,

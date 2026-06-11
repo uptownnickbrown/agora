@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <title>Agora — Your students live inside a working economy</title>
 <meta name="description" content="Agora is a multiplayer economic simulation that replaces the textbook-and-problem-set experience in introductory microeconomics. Pairs with the free OpenStax Principles of Microeconomics 3e.">
-<link rel="icon" href="/assets/brand/icon_192.png">
+<link rel="icon" href="/assets/ui/icon_scale.png">
 <style>
   /* ============ Agora landing — parchment on felt, storybook linework ============ */
   :root {
@@ -390,7 +390,7 @@
     color: var(--parchment);
     text-align: center;
   }
-  .trust-item .ti-glyph { font-size: 24px; display: block; margin-bottom: 6px; }
+  .trust-item .ti-glyph { display: block; margin-bottom: 6px; width: 28px; height: 28px; object-fit: contain; }
   .trust-item h4 { font-size: 14.5px; margin-bottom: 4px; color: var(--gold); }
   .trust-item p { font-size: 12.5px; opacity: 0.82; line-height: 1.45; }
 
@@ -525,12 +525,12 @@
 <header class="hero" id="top">
   <div class="shell">
     <img class="crest" src="/assets/brand/agora_crest.png" alt="The Agora crest — a market scale over crossed quills" width="150" height="150">
-    <h1>Your students live inside a working economy — and the economics that emerges is <em>real</em>.</h1>
+    <h1>Your students live inside a working economy, and the economics that emerges is <em>real</em>.</h1>
     <p class="sub">Agora is a multiplayer market-town simulation that replaces the textbook-and-problem-set experience in introductory microeconomics. Prices come from your students' actual order flow. Shortages, monopolies, and collapsing commons happen because they made them happen. You formalize in lecture what they just lived.</p>
     <div class="cta-row">
       <a class="btn" href="mailto:pilots@agoraecon.org?subject=Pilot%20section%20request">Request a pilot section</a>
-      <a class="btn quiet" href="/?demo=student">🎒 Play as a student</a>
-      <a class="btn quiet" href="/?demo=instructor">👁️ Tour god mode</a>
+      <a class="btn quiet" href="/?demo=student">Play as a student</a>
+      <a class="btn quiet" href="/?demo=instructor">Tour the instructor side</a>
     </div>
     <p class="reassure">Pairs with the free OpenStax <em>Principles of Microeconomics 3e</em>. No cost to students in the pilot. No real money, ever.</p>
   </div>
@@ -545,38 +545,38 @@
     <div class="section-head reveal">
       <span class="kicker">No filler game</span>
       <h2>Every mechanic is a syllabus concept</h2>
-      <p>Agora has no grinding, no combat, no busywork systems. Each major mechanic exists because a chapter of intro micro needs it — and students meet the concept by using the mechanic, days before you name it in lecture.</p>
+      <p>Agora has no grinding, no combat, no busywork systems. Each major mechanic exists because a chapter of intro micro needs it, and students meet the concept by using the mechanic days before you name it in lecture.</p>
     </div>
     <div class="pillars">
       <div class="panel pillar reveal">
         <img class="art" src="/assets/places/market.png" alt="The Market Square" width="84" height="84" loading="lazy">
         <h3>Live order-book markets</h3>
         <span class="maps-to">→ Supply &amp; demand, equilibrium</span>
-        <p>Every good trades on a continuous double auction with real bids and asks from real classmates. Price charts are first-class UI. When the Lantern Festival spikes demand for garments, students watch the shortage, the spike, the supply response, and the glut — in their own data.</p>
+        <p>Every good trades on a continuous double auction with real bids and asks from real classmates. Price charts are first-class UI. When the Lantern Festival spikes demand for garments, students watch the shortage, the spike, the supply response, and the glut play out in their own data.</p>
       </div>
       <div class="panel pillar reveal">
         <img class="art" src="/assets/goods/bread.png" alt="A loaf of bread" width="84" height="84" loading="lazy">
         <h3>Price decrees</h3>
         <span class="maps-to">→ Price controls &amp; deadweight loss</span>
-        <p>When drought sends bread soaring, the Crown caps its price at the old level. Shelves empty. A gray market may emerge — we let it. Students feel who actually bears the cost of a ceiling before they ever see the welfare triangle.</p>
+        <p>When drought sends bread soaring, the Crown caps its price at the old level. The shelves empty fast, and if a gray market springs up, we let it run. Students feel who actually bears the cost of a ceiling before they ever see the welfare triangle.</p>
       </div>
       <div class="panel pillar reveal">
         <img class="art" src="/assets/goods/glowdye.png" alt="A vial of glowdye" width="84" height="84" loading="lazy">
         <h3>Crown license auctions</h3>
         <span class="maps-to">→ Monopoly, entry, antitrust</span>
-        <p>Glowdye can only be made under a Crown license, sold by sealed-bid auction to a handful of students. License holders price like monopolists — until the Second Charter announces more licenses and entry compresses margins toward the competitive outcome.</p>
+        <p>Glowdye can only be made under a Crown license, sold by sealed-bid auction to a handful of students. License holders price like monopolists, right up until the Second Charter announces more licenses and entry compresses margins toward the competitive outcome.</p>
       </div>
       <div class="panel pillar reveal">
         <img class="art" src="/assets/goods/fish.png" alt="A fresh fish" width="84" height="84" loading="lazy">
         <h3>The fishery commons</h3>
         <span class="maps-to">→ Externalities &amp; common resources</span>
-        <p>The Docks fishery regenerates logistically under open access — which means it <em>will</em> collapse, because intro students do exactly what theory predicts. The recovery, via quotas or tradable permits, is the rest of the lesson.</p>
+        <p>The Docks fishery regenerates logistically under open access, which means it <em>will</em> collapse, because intro students do exactly what theory predicts. The recovery, via quotas or tradable permits, is the rest of the lesson.</p>
       </div>
       <div class="panel pillar reveal">
         <img class="art" src="/assets/places/workshop.png" alt="An artisan workshop" width="84" height="84" loading="lazy">
         <h3>Production facilities</h3>
         <span class="maps-to">→ Cost curves &amp; the firm</span>
-        <p>Mills, looms, and smithies have build costs (fixed), per-cycle inputs and upkeep (variable), and hired workers with genuinely diminishing returns. Students choose between high-fixed factories and low-fixed artisan shops — then live with their break-even math.</p>
+        <p>Mills, looms, and smithies have build costs (fixed), per-cycle inputs and upkeep (variable), and hired workers with genuinely diminishing returns. Students choose between high-fixed factories and low-fixed artisan shops, then live with their break-even math.</p>
       </div>
     </div>
   </div>
@@ -602,7 +602,7 @@
     <div class="section-head reveal">
       <span class="kicker">Experience first, formalize second</span>
       <h2>The seven-week arc</h2>
-      <p>One persistent class economy, seven weeks of scripted world events — each engineered so a textbook phenomenon emerges from your students' own decisions. Weeks unlock on your pacing.</p>
+      <p>Your class shares one persistent economy through seven weeks of scripted world events, each engineered so a textbook phenomenon emerges from your students' own decisions. Weeks unlock on your pacing.</p>
     </div>
 
     <div class="timeline">
@@ -615,7 +615,7 @@
             <div class="tl-copy">
               <span class="wk">Week 1 · Ch. 1–2</span>
               <h3>The Traveling Merchant</h3>
-              <p>Trading only, no production — with deliberately unbalanced endowments, so trade is obviously valuable. A comparative-advantage routing puzzle funds each student's first shop.</p>
+              <p>The first week is trading only, no production, with endowments deliberately unbalanced so that trade is obviously valuable. A comparative-advantage routing puzzle funds each student's first shop.</p>
               <div class="concepts"><span class="tag">opportunity cost</span><span class="tag">specialization</span><span class="tag">gains from trade</span></div>
             </div>
           </div>
@@ -628,7 +628,7 @@
           <img class="tl-art" src="/assets/events/festival.png" alt="The Lantern Festival fills the square with light" width="600" height="340" loading="lazy">
           <span class="wk">Week 2 · Ch. 3</span>
           <h3>The Festival Rush</h3>
-          <p>The Lantern Festival is announced four days out. Demand for garments and bread spikes hard, then vanishes — students live the full sequence: shortage, price spike, supply response, post-festival glut.</p>
+          <p>The Lantern Festival is announced four days out. Demand for garments and bread spikes hard and then vanishes, so students live the full sequence: shortage, price spike, supply response, post-festival glut.</p>
           <div class="concepts"><span class="tag">demand vs. quantity demanded</span><span class="tag">shift vs. movement along</span><span class="tag">surplus &amp; shortage</span></div>
         </div>
       </div>
@@ -639,7 +639,7 @@
           <img class="tl-art" src="/assets/events/drought.png" alt="Cracked fields under a dry sky" width="600" height="340" loading="lazy">
           <span class="wk">Week 3 · Ch. 5</span>
           <h3>The Drought</h3>
-          <p>Drought hits grain; bread spikes. Medicine — with inelastic NPC demand — stays expensive but available, while elastic luxuries crater. Elasticity stops being a formula and becomes a thing that happened to your flour.</p>
+          <p>Drought hits the grain harvest and bread spikes. Medicine, where NPC demand is inelastic, stays expensive but available, while elastic luxuries crater. Elasticity stops being a formula and becomes a thing that happened to your flour.</p>
           <div class="concepts"><span class="tag">elasticity determinants</span><span class="tag">total revenue test</span></div>
         </div>
       </div>
@@ -650,7 +650,7 @@
           <img class="tl-art" src="/assets/events/decree.png" alt="A royal herald unfurls the Bread Decree" width="600" height="340" loading="lazy">
           <span class="wk">Week 3 · Ch. 5</span>
           <h3>The Bread Decree</h3>
-          <p>The Crown caps bread at the pre-drought price. Shelves empty within a day; a gray market may emerge, and we let it. The repeal — one instructor click — is the resolution students argue about in your lecture.</p>
+          <p>The Crown caps bread at the pre-drought price. Shelves empty within a day; if a gray market emerges, we let it. The repeal takes one instructor click, and it becomes the resolution students argue about in your lecture.</p>
           <div class="concepts"><span class="tag">price ceilings</span><span class="tag">who bears the cost</span><span class="tag">deadweight loss</span></div>
         </div>
       </div>
@@ -663,7 +663,7 @@
             <div class="tl-copy">
               <span class="wk">Week 4 · Ch. 7, with Ch. 4 threads</span>
               <h3>The Charter Choice</h3>
-              <p>Guild charter factory (high fixed cost, low marginal) or artisan shop (low fixed, high marginal)? You swing demand down, then up, and students journal predict-then-observe against their own break-even point — while hiring workers at a wage with diminishing returns.</p>
+              <p>Guild charter factory (high fixed cost, low marginal) or artisan shop (low fixed, high marginal)? You swing demand down, then up, and students journal predict-then-observe against their own break-even point, all while hiring workers at a wage with diminishing returns.</p>
               <div class="concepts"><span class="tag">fixed vs. marginal cost</span><span class="tag">shut-down vs. exit</span><span class="tag">break-even</span></div>
             </div>
           </div>
@@ -676,7 +676,7 @@
           <img class="tl-art" src="/assets/events/auction.png" alt="The sealed-bid glowdye license auction" width="600" height="340" loading="lazy">
           <span class="wk">Week 5 · Ch. 8–9</span>
           <h3>The Glowdye Licenses</h3>
-          <p>The Crown auctions 4–6 exclusive glowdye licenses by sealed bid. License holders meet posted demand like little monopolists while everyone else trades in thick competitive markets — then the Second Charter announces more licenses, and entry does what entry does.</p>
+          <p>The Crown auctions 4–6 exclusive glowdye licenses by sealed bid. License holders meet posted demand like little monopolists while everyone else trades in thick competitive markets, until the Second Charter announces more licenses and entry does what entry does.</p>
           <div class="concepts"><span class="tag">price taker vs. maker</span><span class="tag">barriers to entry</span><span class="tag">MR &lt; P</span></div>
         </div>
       </div>
@@ -687,7 +687,7 @@
           <img class="tl-art" src="/assets/events/gray_skies.png" alt="Smog dims the colors of the town" width="600" height="340" loading="lazy">
           <span class="wk">Week 6 · Ch. 12</span>
           <h3>Gray Skies</h3>
-          <p>Heavy production now emits smog: the art literally desaturates as it accumulates, efficiency drops district-wide, and luxury demand sags. The resolution is a Pigouvian soot levy — scrubbers are for sale, and suddenly someone buys one.</p>
+          <p>Heavy production now emits smog: the art literally desaturates as it accumulates, efficiency drops district-wide, and luxury demand sags. The resolution is a Pigouvian soot levy; scrubbers are for sale, and suddenly someone buys one.</p>
           <div class="concepts"><span class="tag">private vs. social cost</span><span class="tag">corrective taxes</span></div>
         </div>
       </div>
@@ -698,7 +698,7 @@
           <img class="tl-art" src="/assets/events/fishery_collapse.png" alt="Empty nets over a depleted fishery" width="600" height="340" loading="lazy">
           <span class="wk">Week 6 · Ch. 13</span>
           <h3>The Fishery Collapse</h3>
-          <p>Open access meets a regenerating stock, and the stock loses. Students who fished for fun since week two watch yields wither — then debate quotas versus tradable permits versus property rights, with skin in the game.</p>
+          <p>Open access meets a regenerating stock, and the stock loses. Students who fished for fun since week two watch their yields wither, then debate quotas versus tradable permits versus property rights with skin in the game.</p>
           <div class="concepts"><span class="tag">tragedy of the commons</span><span class="tag">quotas vs. permits</span><span class="tag">public goods</span></div>
         </div>
       </div>
@@ -709,7 +709,7 @@
           <img class="tl-art" src="/assets/events/market_wars.png" alt="Banners fly over the Market Wars tournament" width="600" height="340" loading="lazy">
           <span class="wk">Week 7 · Ch. 10–11</span>
           <h3>The Market Wars</h3>
-          <p>A four-day team capstone. Compacts — formal agreements with visible terms and <em>zero enforcement</em> — make cartels possible and defection irresistible. Cartels form, price wars erupt, the Crier reports it all, and your antitrust lever is one click away.</p>
+          <p>The capstone is a four-day team event built around Compacts, formal agreements with visible terms and <em>zero enforcement</em>, which make cartels possible and defection irresistible. Cartels form, price wars erupt, the Crier reports it all, and your antitrust lever is one click away.</p>
           <div class="concepts"><span class="tag">oligopoly</span><span class="tag">collusion &amp; defection</span><span class="tag">prisoner's dilemma</span><span class="tag">antitrust</span></div>
         </div>
       </div>
@@ -724,7 +724,7 @@
     <div class="section-head reveal">
       <span class="kicker">Drop-in coverage</span>
       <h2>Mapped chapter-by-chapter to OpenStax 3e</h2>
-      <p>Agora pairs with the free OpenStax <em>Principles of Microeconomics 3e</em> (CC BY) and replaces most reading homework for the covered weeks. Your lecture formalizes concepts using what just happened in <em>your class's</em> economy. Chapters 14–20 you teach conventionally — Agora stays out of the way.</p>
+      <p>Agora pairs with the free OpenStax <em>Principles of Microeconomics 3e</em> (CC BY) and replaces most reading homework for the covered weeks. Your lecture formalizes concepts using what just happened in <em>your class's</em> economy. Chapters 14–20 you teach conventionally, and Agora stays out of the way.</p>
     </div>
     <div class="os-flex reveal">
       <div class="book3d">
@@ -734,7 +734,7 @@
           <div class="bsub">3rd edition</div>
           <div class="bfoot">Free &amp; open · CC BY 4.0</div>
         </div>
-        <div class="pairs">The free text your students already use —<br>
+        <div class="pairs">The free text your students already use.<br>
           Agora replaces the <em>problem sets</em>, not the book.</div>
       </div>
       <div class="panel on-parchment" style="flex:1; min-width:0;">
@@ -756,8 +756,8 @@
               <tr class="core"><td>10. Monopolistic Competition &amp; Oligopoly</td><td><span class="wkpill">Week 7</span><span class="mech">Market Wars: cartels form, hold their breath, and crack</span></td></tr>
               <tr><td>11. Monopoly &amp; Antitrust Policy</td><td><span class="wkpill soft">Week 7</span><span class="mech">your one-click antitrust suit, reported by the Crier</span></td></tr>
               <tr class="core"><td>12. Environmental Protection &amp; Externalities</td><td><span class="wkpill">Week 6</span><span class="mech">smog literally desaturates the town's art until taxed</span></td></tr>
-              <tr><td>13. Positive Externalities &amp; Public Goods</td><td><span class="wkpill soft">Week 6</span><span class="mech">the fishery commons collapses — then quotas bring it back</span></td></tr>
-              <tr><td>14–20</td><td><span class="wkpill none">Yours</span><span class="mech">taught conventionally — Agora stays out of the way</span></td></tr>
+              <tr><td>13. Positive Externalities &amp; Public Goods</td><td><span class="wkpill soft">Week 6</span><span class="mech">the fishery commons collapses, then quotas bring it back</span></td></tr>
+              <tr><td>14–20</td><td><span class="wkpill none">Yours</span><span class="mech">taught conventionally; Agora stays out of the way</span></td></tr>
             </tbody>
           </table>
         </div>
@@ -772,7 +772,7 @@
     <div class="section-head reveal">
       <span class="kicker">Low-touch god mode</span>
       <h2>You don't play the game. You run the world.</h2>
-      <p>Everything important is push-based, and every lever is one click. Target instructor commitment: <strong style="color:var(--gold)">under 30 minutes a week</strong> — most of it reading a report we wrote for you.</p>
+      <p>Everything important is push-based, and every lever is one click. The whole thing is built to ask <strong style="color:var(--gold)">under 30 minutes a week</strong> of you, most of it spent reading a report we wrote for you.</p>
     </div>
     <div class="split">
       <div class="panel reveal">
@@ -781,28 +781,28 @@
             <img class="fico" src="/assets/places/boards.png" alt="" width="52" height="52" loading="lazy">
             <div>
               <h4>The five-minute dashboard</h4>
-              <p>World vitals at a glance — active students, price charts, wealth Gini, volumes, smog and fishery health — plus a feed of detected moments: price spikes, hoarding, cartel signatures, gray markets, disengaged students.</p>
+              <p>The world's vitals at a glance (active students, price charts, wealth Gini, volumes, smog and fishery health), plus a feed of detected moments: price spikes, hoarding, cartel signatures, gray markets, disengaged students.</p>
             </div>
           </li>
           <li>
             <img class="fico" src="/assets/places/crier.png" alt="" width="52" height="52" loading="lazy">
             <div>
               <h4>One-click diegetic interventions</h4>
-              <p>Sixteen kinds — droughts, festivals, ceilings, floors, Pigouvian taxes, licenses, antitrust suits, quotas — each previewable and schedulable. Students never see a settings change; they see the Crier announce that the Royal Granary has spoken.</p>
+              <p>Sixteen kinds, from droughts, festivals, ceilings, and floors to Pigouvian taxes, licenses, antitrust suits, and quotas, every one previewable and schedulable. Students never see a settings change; they see the Crier announce that the Royal Granary has spoken.</p>
             </div>
           </li>
           <li>
             <img class="fico" src="/assets/crier/masthead.png" alt="" width="52" height="52" loading="lazy" style="object-fit:cover;border-radius:6px;">
             <div>
-              <h4>The Monday-morning Lecture Playbook</h4>
-              <p>Each week: what happened in <em>your</em> class's economy (with charts), 3–5 discussion questions keyed to decisions real students actually made, misconceptions the tutor detected, and suggested next-week interventions. Slides-friendly export.</p>
+              <h4>The Monday Brief, delivered by email</h4>
+              <p>Every week it lands in your inbox automatically, no login required: what happened in <em>your</em> class's economy, 3–5 discussion questions keyed to decisions real students actually made, misconceptions the tutor detected, students who need a nudge, and the gradebook attached as a CSV ready to import into your LMS.</p>
             </div>
           </li>
           <li>
             <img class="fico" src="/assets/ui/coin.png" alt="" width="52" height="52" loading="lazy">
             <div>
               <h4>Mastery heatmap &amp; gradebook</h4>
-              <p>Learning-objective × student heatmap, engagement flags, configurable grade weights, CSV export. The grade model is LTI-shaped from day one; LTI 1.3 delivery is a fast-follow.</p>
+              <p>A learning-objective × student heatmap, engagement flags, and configurable grade weights. Grades export as CSV keyed to institutional email and import into Canvas, Moodle, and Blackboard today, with no LMS integration project required.</p>
             </div>
           </li>
         </ul>
@@ -824,7 +824,7 @@
         </div>
         <div class="plaque">"Your students just lived through a supply shock — <strong>here's the data, here's what to teach Monday.</strong>"</div>
         <div class="panel" style="margin-top:18px;">
-          <p style="font-size:14.5px;color:var(--ink-soft);"><strong style="color:var(--ink);">Asynchronous by design.</strong> Students play 20–60 minutes a few times a week, on their own schedule. No mechanic requires being online at a specific time, and nobody is ruined by an offline weekend — bankruptcy is a soft state with a Guild "fresh start" loan. The nightly market close gives the world a heartbeat without demanding synchronous play.</p>
+          <p style="font-size:14.5px;color:var(--ink-soft);"><strong style="color:var(--ink);">Asynchronous by design.</strong> Students play 20–60 minutes a few times a week, on their own schedule. No mechanic requires being online at a specific time, and nobody is ruined by an offline weekend, because bankruptcy is a soft state with a Guild "fresh start" loan. The nightly market close gives the world a heartbeat without demanding synchronous play.</p>
         </div>
       </div>
     </div>
@@ -837,19 +837,19 @@
     <div class="section-head reveal">
       <span class="kicker">See it live</span>
       <h2>This is what class looks like</h2>
-      <p>Real screens from a running section — a live order book with the drought
+      <p>These are real screens from a running section: a live order book with the drought
          still on the chart, and the instructor dashboard reading the same world.</p>
     </div>
     <div class="shots reveal">
       <div>
         <div class="browser-frame"><div class="bar"><i></i><i></i><i></i></div>
           <img src="/assets/marketing/shot_market.png" alt="The Market Square: live order book, price chart with the drought spike, the trade tape" width="1440" height="940" loading="lazy"></div>
-        <div class="shot-cap">A student's Market Square — the Bread Decree's shortage is right there on the chart.</div>
+        <div class="shot-cap">A student's Market Square, with the Bread Decree's shortage right there on the chart.</div>
       </div>
       <div>
         <div class="browser-frame"><div class="bar"><i></i><i></i><i></i></div>
           <img src="/assets/marketing/shot_dashboard.png" alt="The instructor dashboard: vitals, price charts for every good, the roster" width="1440" height="940" loading="lazy"></div>
-        <div class="shot-cap">Your dashboard — vitals, every market, every student, one glance.</div>
+        <div class="shot-cap">Your dashboard, where the vitals, every market, and every student fit in one glance.</div>
       </div>
     </div>
   </div>
@@ -870,8 +870,8 @@
         <div>
           <span class="kicker panel-kicker">The tutor</span>
           <h3 style="font-size:24px;margin:6px 0 8px;">Professor Pip, market pigeon</h3>
-          <p style="color:var(--ink-soft);font-size:15.5px;">A know-it-all pigeon with a head for prices, backed by a frontier LLM. Pip answers questions Socratically, in character, with the student's own holdings and market data in view. He nudges, he quizzes, he celebrates — and he <em>never</em> plays the game for them: no trading on their behalf, no leaking hidden information, no financial advice that does their thinking.</p>
-          <div class="pip-bubble">"Coo! Your bread sold out the moment the Decree hit. Curious, isn't it — the price said one thing, the empty shelf said another. Which one was telling the truth?"</div>
+          <p style="color:var(--ink-soft);font-size:15.5px;">A know-it-all pigeon with a head for prices, backed by a frontier LLM. Pip answers questions Socratically, in character, with the student's own holdings and market data in view. He nudges, he quizzes, he celebrates, and he <em>never</em> plays the game for them: no trading on their behalf, no leaking hidden information, no financial advice that does their thinking.</p>
+          <div class="pip-bubble">"Coo! Your bread sold out the moment the Decree hit. Curious, isn't it? The price said one thing and the empty shelf said another. Which one was telling the truth?"</div>
         </div>
       </div>
     </div>
@@ -880,7 +880,7 @@
       <div class="panel fun-card reveal">
         <img class="art" src="/assets/places/puzzle.png" alt="The daily puzzle board" width="72" height="72" loading="lazy">
         <h3>Market Mastermind</h3>
-        <p>A two-minute daily deduction puzzle — same for the whole class, with Wordle-style heat feedback, shareable emoji result cards, and streak leaderboards. Deducing a mystery equilibrium price is the hook; supply-and-demand reasoning is the trick.</p>
+        <p>A two-minute daily deduction puzzle, the same for the whole class, with Wordle-style heat feedback, shareable emoji result cards, and streak leaderboards. Deducing a mystery equilibrium price is the hook; supply-and-demand reasoning is the trick.</p>
       </div>
       <div class="panel fun-card reveal">
         <div class="trophy-row">
@@ -889,18 +889,18 @@
           <img src="/assets/trophies/gilded_leviathan.png" alt="The Gilded Leviathan trophy" width="58" height="58" loading="lazy">
         </div>
         <h3>Fishing at the Docks</h3>
-        <p>A timing minigame that yields fish, coppers, and rare mounted trophies — from the Smug Trout to the Gilded Leviathan. It's also the on-ramp to Week 6: the students who love the Docks most feel the commons collapse hardest.</p>
+        <p>A timing minigame that yields fish, coppers, and rare mounted trophies, from the Smug Trout up to the Gilded Leviathan. It's also the on-ramp to Week 6, because the students who love the Docks most feel the commons collapse hardest.</p>
       </div>
       <div class="panel fun-card reveal">
         <img class="art" src="/assets/cosmetics/peacock.png" alt="A shop peacock cosmetic" width="72" height="72" loading="lazy">
         <h3>Cosmetics &amp; bragging rights</h3>
-        <p>Earned prestige cosmetics, a coin-priced Luxury Boutique, shop decoration, achievement titles — "Cloth Baron," "Arbitrage Artist," "Survived the Drought" — and leaderboards that reward cleverness, not grinding.</p>
+        <p>Earned prestige cosmetics, a coin-priced Luxury Boutique, shop decoration, and achievement titles like "Cloth Baron," "Arbitrage Artist," and "Survived the Drought." Leaderboards reward cleverness, not grinding.</p>
       </div>
       <div class="panel fun-card crier-card reveal">
         <img src="/assets/crier/masthead.png" alt="Masthead of The Agora Crier newspaper" width="300" height="80" loading="lazy">
         <div class="copy">
           <h3>The Agora Crier</h3>
-          <p>The town newspaper, published at every market close: overnight price moves, named movers, event coverage, and — during Market Wars — investigative reporting that makes cartel strategy uncomfortably public. Students check it the way they check a group chat.</p>
+          <p>The town newspaper, published at every market close, covers overnight price moves, named movers, and the week's events. During Market Wars it adds investigative reporting that makes cartel strategy uncomfortably public. Students check it the way they check a group chat.</p>
         </div>
       </div>
     </div>
@@ -919,7 +919,7 @@
       <div class="panel assess-card reveal">
         <span class="num">1</span>
         <h3>Embedded tutor checks</h3>
-        <p>2–4 minute checks — MCQs, graph reads, predict-then-observe, one-sentence free responses graded by rubric — delivered in character at the teachable moment, roughly 8–12 per student per week. Every item is tagged to a learning objective adapted from OpenStax Ch. 2–13.</p>
+        <p>Checks of 2–4 minutes arrive in character at the teachable moment, roughly 8–12 per student per week: MCQs, graph reads, predict-then-observe prompts, and one-sentence free responses graded by rubric. Every item is tagged to a learning objective adapted from OpenStax Ch. 2–13.</p>
       </div>
       <div class="panel assess-card reveal">
         <span class="num">2</span>
@@ -929,12 +929,12 @@
       <div class="panel assess-card reveal">
         <span class="num">3</span>
         <h3>Participation ≠ wealth</h3>
-        <p>Grades reward session regularity, market activity, event participation, and demonstrated understanding — never coin balance. The student who got rich cornering wool and the student who went bankrupt learning why are graded on the same evidence: what they understood.</p>
+        <p>Grades reward session regularity, market activity, event participation, and demonstrated understanding, never coin balance. The student who got rich cornering wool and the student who went bankrupt learning why are graded on the same evidence: what they understood.</p>
       </div>
       <div class="panel assess-card reveal">
         <span class="num">4</span>
         <h3>Integrity by design</h3>
-        <p>Dozens of low-stakes checks make the return on cheating terrible: there's no single exam worth outsourcing. The anomaly engine also watches for multi-accounting, collusion, and suspicious wealth transfers — the same machinery that detects cartels.</p>
+        <p>Dozens of low-stakes checks make the return on cheating terrible, because there's no single exam worth outsourcing. The anomaly engine also watches for multi-accounting, collusion, and suspicious wealth transfers, using the same machinery that detects cartels.</p>
       </div>
     </div>
   </div>
@@ -972,27 +972,27 @@
     <div class="panel on-parchment faq reveal">
       <details>
         <summary>How much of my time does this really take?</summary>
-        <p>Target: under 30 minutes a week. The dashboard is a five-minute read; detected moments arrive deduplicated with one-click responses; the weekly Lecture Playbook writes itself from your class's data. The seven-week arc runs on autopilot unless you reach for a lever.</p>
+        <p>We target under 30 minutes a week, and you never have to log in. The Monday Brief lands in your inbox with the week's playbook, class mastery, students who need a nudge, and the gradebook as CSV. The seven-week arc runs on autopilot, and the dashboard is there when you want to reach for a lever.</p>
       </details>
       <details>
         <summary>Can students cheat?</summary>
-        <p>The economics is multiplayer — there is no answer key to copy. Checks are frequent and low-stakes, so the ROI on cheating any single one is terrible by design. Grades reward engagement and demonstrated understanding, never wealth, and the anomaly system watches for multi-accounting and suspicious transfers.</p>
+        <p>The economics is multiplayer, so there is no answer key to copy. Checks are frequent and low-stakes, so the ROI on cheating any single one is terrible by design. Grades reward engagement and demonstrated understanding, never wealth, and the anomaly system watches for multi-accounting and suspicious transfers.</p>
       </details>
       <details>
         <summary>What if some students just won't play?</summary>
-        <p>Asynchronous-first: 20–60 minutes a few times a week, no scheduled sessions, and 48 hours offline can't ruin anyone (soft bankruptcy is a fresh-start loan). Disengagement shows up on your dashboard before it becomes a grade problem — and the daily puzzle, streaks, and fishing exist precisely to make logging in the path of least resistance.</p>
+        <p>Agora is asynchronous-first: students play 20–60 minutes a few times a week, nothing is scheduled, and 48 hours offline can't ruin anyone (soft bankruptcy is a fresh-start loan). Disengagement shows up on your dashboard before it becomes a grade problem, and the daily puzzle, streaks, and fishing exist precisely to make logging in the path of least resistance.</p>
       </details>
       <details>
         <summary>How do grades get to my LMS?</summary>
-        <p>Participation + mastery, weights you control, CSV export today; the grade model is LTI-1.3-shaped and LTI delivery is the first fast-follow.</p>
+        <p>Grades combine participation and mastery with weights you control, and they export as CSV today. The grade model is already LTI-1.3-shaped, and LTI delivery is the first fast-follow.</p>
       </details>
       <details>
         <summary>What does it cost students?</summary>
-        <p>Nothing in the pilot. It pairs with the free OpenStax text (CC BY), runs in any browser including phones, and there is no real money anywhere in the game — coins are coins.</p>
+        <p>Nothing in the pilot. It pairs with the free OpenStax text (CC BY), runs in any browser including phones, and there is no real money anywhere in the game; coins are coins.</p>
       </details>
       <details>
         <summary>Does it work for a small section?</summary>
-        <p>NPC liquidity auto-scales with roster size. Below ~12 students some phenomena (cartel formation, the fishery collapse) get an NPC assist so the story beats still land — you'll see a gentle "thin world" note rather than a broken week.</p>
+        <p>NPC liquidity auto-scales with roster size. Below ~12 students some phenomena (cartel formation, the fishery collapse) get an NPC assist so the story beats still land, and you'll see a gentle "thin world" note rather than a broken week.</p>
       </details>
     </div>
   </div>
@@ -1002,32 +1002,32 @@
 <section id="endorsements">
   <div class="shell">
     <div class="section-head reveal">
-      <span class="kicker">From early pilot sections</span>
-      <h2>What colleagues are seeing</h2>
+      <span class="kicker">Aspirational testimonials — these professors are fictional, for now</span>
+      <h2>What we're building toward</h2>
     </div>
     <div class="quotes">
       <div class="panel quote reveal">
         <span class="qmark">&ldquo;</span>
         <blockquote>I triggered the bread ceiling on a Tuesday night. By Thursday's lecture my students had watched the shelves empty, found the gray market, and were arguing about deadweight loss — unprompted, with their own price charts on their phones. I have taught Chapter 5 for eleven years and I have never had the welfare triangle land like that.</blockquote>
         <div class="attrib">
-          <strong>Dr. Marisol Vega</strong>
-          <span>Senior Lecturer in Economics, The Ohio State University · piloting in a 78-seat section</span>
+          <strong>Prof. Rosie Scenario</strong>
+          <span>Senior Lecturer in Hypothetical Economics, University of Notyet · 78 imaginary students</span>
         </div>
       </div>
       <div class="panel quote reveal">
         <span class="qmark">&ldquo;</span>
-        <blockquote>The glowdye week sold me. My license holders priced like little monopolists, then the second auction was announced and I watched margins compress toward the competitive outcome in real time — entry theory, performed by nineteen-year-olds. The Monday playbook handed me the charts and three discussion questions about decisions my actual students made. Prep took twenty minutes.</blockquote>
+        <blockquote>The glowdye week sold me. My license holders priced like little monopolists, then the second auction was announced and I watched margins compress toward the competitive outcome in real time. It was entry theory performed by nineteen-year-olds. The Monday playbook handed me the charts and three discussion questions about decisions my actual students made. Prep took twenty minutes.</blockquote>
         <div class="attrib">
-          <strong>Prof. Daniel Okafor</strong>
-          <span>Associate Professor of Economics, Carleton College</span>
+          <strong>Dr. Ceteris Paribus</strong>
+          <span>Associate Professor of Economics (all else held equal), Placeholder College</span>
         </div>
       </div>
       <div class="panel quote reveal">
         <span class="qmark">&ldquo;</span>
-        <blockquote>My students work jobs; many never opened the textbook. They open Agora — on the bus, between shifts — because of a pigeon and a fishing minigame, frankly. But the mastery heatmap doesn't lie: my elasticity scores are the best I've seen, and when the fishery collapsed, a student who hadn't spoken all term explained open access to the class. That's why I'm running it again.</blockquote>
+        <blockquote>My students work jobs; many never opened the textbook. They open Agora on the bus and between shifts, frankly because of a pigeon and a fishing minigame. But the mastery heatmap doesn't lie: my elasticity scores are the best I've seen, and when the fishery collapsed, a student who hadn't spoken all term explained open access to the class. That's why I'm running it again.</blockquote>
         <div class="attrib">
-          <strong>Prof. Janet Kowalski</strong>
-          <span>Economics Faculty, Front Range Community College</span>
+          <strong>Prof. Margie Nalcost</strong>
+          <span>Economics Faculty, Sunk Cost Community College</span>
         </div>
       </div>
     </div>
@@ -1039,29 +1039,29 @@
   <div class="shell">
     <div class="trust reveal">
       <div class="trust-item">
-        <span class="ti-glyph">📖</span>
+        <img class="ti-glyph" src="/assets/ui/icon_book.png" alt="" width="28" height="28" loading="lazy">
         <h4>Pairs with OpenStax</h4>
         <p><em>Principles of Microeconomics 3e</em> (CC BY). The textbook stays free; Agora replaces the reading homework for covered weeks.</p>
       </div>
       <div class="trust-item">
-        <span class="ti-glyph">🛡️</span>
+        <img class="ti-glyph" src="/assets/ui/icon_shield.png" alt="" width="28" height="28" loading="lazy">
         <h4>FERPA-minded</h4>
         <p>Student data handled for instruction only. Students never see each other's grades or mastery; instructors never see another section's world.</p>
       </div>
       <div class="trust-item">
-        <span class="ti-glyph">🪙</span>
+        <img class="ti-glyph" src="/assets/ui/coin.png" alt="" width="28" height="28" loading="lazy">
         <h4>No real money, ever</h4>
-        <p>One in-game currency — coppers — with equal starting endowments. No purchases, no microtransactions, nothing to monetize students.</p>
+        <p>One in-game currency, coppers, with equal starting endowments. No purchases, no microtransactions, nothing to monetize students.</p>
       </div>
       <div class="trust-item">
-        <span class="ti-glyph">🌐</span>
+        <img class="ti-glyph" src="/assets/ui/icon_globe.png" alt="" width="28" height="28" loading="lazy">
         <h4>Runs anywhere</h4>
         <p>Any modern browser, phone-friendly, no app store, no installs. Built for the distracted freshman on a phone in the back row.</p>
       </div>
       <div class="trust-item">
-        <span class="ti-glyph">🎓</span>
+        <img class="ti-glyph" src="/assets/recap/laurel.png" alt="" width="28" height="28" loading="lazy">
         <h4>Gradebook-ready</h4>
-        <p>Configurable weights and CSV export today; LTI 1.3 gradebook sync is a fast-follow, and the grade model is LTI-shaped already.</p>
+        <p>Configurable weights, with the gradebook emailed weekly and exportable as CSV that imports straight into Canvas, Moodle, or Blackboard.</p>
       </div>
     </div>
   </div>
@@ -1075,8 +1075,8 @@
     <p>Pilot sections are free, include onboarding for you and your students, and come with the full instructor dashboard, playbooks, and gradebook. Bring 20–80 students; we'll bring the town.</p>
     <div class="cta-row">
       <a class="btn" href="mailto:pilots@agoraecon.org?subject=Pilot%20section%20request">Request a pilot section</a>
-      <a class="btn quiet" href="/?demo=student">🎒 Play as a student</a>
-      <a class="btn quiet" href="/?demo=instructor">👁️ Tour god mode</a>
+      <a class="btn quiet" href="/?demo=student">Play as a student</a>
+      <a class="btn quiet" href="/?demo=instructor">Tour the instructor side</a>
     </div>
     <p class="reassure">No cost to students in the pilot · pairs with the free OpenStax text · under 30 minutes a week of your time</p>
   </div>

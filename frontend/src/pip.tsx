@@ -175,7 +175,7 @@ export function PipDock({ wid, nudge, checkAvailable }: {
                     </b>{" "}
                     <InlineMd text={feedback.feedback} />
                     <div><button className="quiet" style={{ marginTop: 6 }}
-                                 onClick={loadCheck}>another</button></div>
+                                 onClick={loadCheck}>Another</button></div>
                   </div>
                 )}
               </>
@@ -224,11 +224,13 @@ export function Puzzle({ wid, notify, refresh }: {
   return (
     <div className="panel" style={{ maxWidth: 480, margin: "0 auto",
                                     textAlign: "center" }}>
-      <h3>🧮 Market Mastermind — Day {state.day}</h3>
+      <h3><Asset slot="places/puzzle" glyph="🧮" size={20} />
+        {" "}Market Mastermind — Day {state.day}</h3>
       {(state.streak > 0 || state.streak_best > 0) && (
         <div style={{ marginBottom: 8 }}>
           <span className="streak-chip" title="puzzle streak">
-            🔥 {state.streak} day{state.streak === 1 ? "" : "s"}
+            <Asset slot="ui/icon_flame" glyph="🔥" size={13} />
+            {" "}{state.streak} day{state.streak === 1 ? "" : "s"}
             {state.streak_best > state.streak && <span style={{ opacity: 0.7 }}>
               &nbsp;· best {state.streak_best}</span>}
           </span>
@@ -271,7 +273,7 @@ export function Puzzle({ wid, notify, refresh }: {
                   onClick={() => {
                     navigator.clipboard?.writeText(
                       `Market Mastermind day ${state.day}: ${shareCard}`);
-                    notify("Copied — go gloat.");
+                    notify("Copied. Go gloat.");
                   }}>copy share card</button>
         </div>
       )}

@@ -358,6 +358,25 @@ class DetectedMoment(TimestampMixin, Base):
     endorsed: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
+class EmailLog(TimestampMixin, Base):
+    """Audit trail for outbound email (digests, magic links, alerts).
+
+    Idempotency for the weekly digest lives in world.config (digest_sent_week);
+    this table is audit + dev-mode inspection, so re-sends are allowed.
+    """
+    __tablename__ = "email_log"
+    id: Mapped[uuid.UUID] = uuid_pk()
+    world_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("worlds.id"), index=True, nullable=True)
+    to_email: Mapped[str] = mapped_column(String(320))
+    kind: Mapped[str] = mapped_column(String(24))  # digest | magic_link | alert
+    ref: Mapped[str] = mapped_column(String(40), default="")  # e.g. "week:3"
+    subject: Mapped[str] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(12))  # sent | failed | console
+    provider_id: Mapped[str] = mapped_column(String(80), default="")
+    body_text: Mapped[str] = mapped_column(Text, default="")  # console mode only
+
+
 # -- fun layer -------------------------------------------------------------------
 
 class PuzzleAttempt(Base):

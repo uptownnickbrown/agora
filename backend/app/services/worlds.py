@@ -166,6 +166,11 @@ async def advance_week(db: AsyncSession, world: World) -> None:
     world.current_week += 1
     if world.state == "onboarding":
         world.state = "active"
+    # The week that just ended is due for an instructor email digest; the
+    # worker's email_sweep sends it outside this transaction. (Dict
+    # reassigned: JSON change tracking.)
+    world.config = {**(world.config or {}),
+                    "digest_due_week": world.current_week - 1}
     await emit(db, world, "week_advanced", {"week": world.current_week})
 
 

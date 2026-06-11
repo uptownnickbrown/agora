@@ -53,6 +53,20 @@ export default function App() {
   }, []);
   useEffect(() => { loadMe(); }, [loadMe]);
 
+  // Magic-link landing: /?magic=<token> from the sign-in email.
+  useEffect(() => {
+    const magic = new URLSearchParams(location.search).get("magic");
+    if (!magic) return;
+    api.post("/auth/magic/redeem", { token: magic }).then((out) => {
+      setToken(out.token);
+      history.replaceState(null, "", "/");
+      loadMe();
+    }).catch(() => {
+      history.replaceState(null, "", "/");
+      notify("That sign-in link is invalid or expired. Request a new one.", true);
+    });
+  }, [loadMe]);
+
   // One-click demo entry from the landing page: /?demo=student|instructor
   useEffect(() => {
     const demo = new URLSearchParams(location.search).get("demo");
@@ -187,13 +201,13 @@ function WorldPicker({ me, onPick, onRefresh, notify }: {
         {me.worlds.map((w) => (
           <div key={w.world_id} style={{ display: "flex", gap: 8,
                                          alignItems: "center", marginBottom: 6 }}>
-            <span style={{ flex: 1 }}>{w.merchant} — week {w.week} ({w.state})</span>
+            <span style={{ flex: 1 }}>{w.merchant} · Week {w.week} ({w.state})</span>
             <button onClick={() => onPick(w.world_id)}>Enter</button>
           </div>
         ))}
         <hr className="divider" />
         <div className="row" style={{ alignItems: "center" }}>
-          <input placeholder="join code" value={code}
+          <input placeholder="Join code" value={code}
                  onChange={(e) => setCode(e.target.value)} />
           <button onClick={join}>Join a world</button>
         </div>
@@ -206,7 +220,8 @@ function WorldPicker({ me, onPick, onRefresh, notify }: {
           <button className="wood" onClick={createWorld}>Create a world</button>
         </div>
         <div className="muted" style={{ marginTop: 6 }}>
-          Creates a 7-week Agora Standard world and makes you its low-touch god.
+          Creates a 7-week Agora Standard world for one course section. Students
+          join with the code; the simulation runs itself from there.
         </div>
       </div>
     </div>
@@ -262,9 +277,12 @@ function GameShell({ me, wid, notify, onLeave }: {
   }, [wid]);
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => {
+    // Instructors have no Player, so /state 403s by design (that one probe is
+    // how we detect them) — don't keep re-probing on the poll.
+    if (!enrolled) return;
     const id = setInterval(refresh, 20000);
     return () => clearInterval(id);
-  }, [refresh]);
+  }, [refresh, enrolled]);
 
   // The art literally desaturates as smog accumulates (Gray Skies, week 6).
   useEffect(() => {
@@ -299,23 +317,26 @@ function GameShell({ me, wid, notify, onLeave }: {
         <div className="banner">AGORA</div>
         <span className="plaque">Week {state.world.week} · Day {state.world.day}</span>
         {(state.world as any).demo &&
-          <span className="plaque" title="shared playground — it reseeds itself">
-            🧪 demo world</span>}
+          <span className="plaque" title="A shared playground; it reseeds itself daily.">
+            <Asset slot="ui/icon_flask" glyph="🧪" size={14} /> Demo world</span>}
         <Coins amount={state.player.coins} />
         <EffortBar effort={state.player.effort} />
         {state.world.smog != null && state.world.smog > 0 &&
-          <span className="plaque" title="district smog">🏭 {state.world.smog}</span>}
+          <span className="plaque" title="district smog">
+            <Asset slot="ui/icon_smog" glyph="🏭" size={14} /> {state.world.smog}</span>}
         <span style={{ marginLeft: "auto", color: "var(--parchment)" }}>
           {state.player.merchant}
         </span>
         {me.is_instructor && (
           <button className="quiet" onClick={() => setInstructorView(!isInstructorView)}>
-            {isInstructorView ? "🎭 play" : "👁️ god mode"}
+            {isInstructorView
+              ? <><Asset slot="ui/icon_mask" glyph="🎭" size={14} /> Play</>
+              : <><Asset slot="ui/icon_eye" glyph="👁️" size={14} /> Instructor view</>}
           </button>
         )}
-        <button className="quiet" onClick={onLeave}>worlds</button>
+        <button className="quiet" onClick={onLeave}>Worlds</button>
         <button className="quiet" onClick={() => { setToken(null); location.reload(); }}>
-          sign out</button>
+          Sign out</button>
       </div>
 
       {isInstructorView ? (
@@ -333,17 +354,20 @@ function GameShell({ me, wid, notify, onLeave }: {
                   Welcome to the Agora, {state.player.merchant}!
                 </h3>
                 <div className="muted" style={{ marginBottom: 10 }}>
-                  You arrive with a wagon of <b>{state.player.aptitude}</b> ⭐ —
-                  your gathering specialty. Coins come from trading what you have
+                  You arrive with a wagon of <b>{state.player.aptitude}</b>, your
+                  gathering specialty ⭐. Coins come from trading what you have
                   for what the town wants.
                 </div>
                 <div className="row" style={{ gap: 8 }}>
                   <button onClick={() => setPlace("merchant")}>
-                    🐫 Ride with the Traveling Merchant</button>
+                    <Asset slot="ui/icon_camel" glyph="🐫" size={16} />
+                    {" "}Ride with the Traveling Merchant</button>
                   <button className="quiet" onClick={() => setPlace("market")}>
-                    ⚖️ Browse the Market</button>
+                    <Asset slot="ui/icon_scale" glyph="⚖️" size={16} />
+                    {" "}Browse the Market</button>
                   <button className="quiet" onClick={() => setPlace("puzzle")}>
-                    🧮 Today's puzzle</button>
+                    <Asset slot="places/puzzle" glyph="🧮" size={16} />
+                    {" "}Today's puzzle</button>
                 </div>
               </div>
             </div>
@@ -359,13 +383,15 @@ function GameShell({ me, wid, notify, onLeave }: {
             {state.world.week === 1 && (
               <div className={`place-tile ${place === "merchant" ? "active" : ""}`}
                    onClick={() => setPlace("merchant")} role="button">
-                <span className="glyph">🐫</span>Traveling Merchant
+                <Asset slot="ui/icon_camel" glyph="🐫" size={40} alt="Traveling Merchant" />
+                <span style={{ display: "block", marginTop: 2 }}>Traveling Merchant</span>
               </div>
             )}
             {isEpilogue && (
               <div className={`place-tile ${place === "recap" ? "active" : ""}`}
                    onClick={() => setPlace("recap")} role="button">
-                <span className="glyph">📖</span>Your Story
+                <Asset slot="ui/icon_book" glyph="📖" size={40} alt="Your Story" />
+                <span style={{ display: "block", marginTop: 2 }}>Your Story</span>
               </div>
             )}
           </div>

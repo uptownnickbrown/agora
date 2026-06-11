@@ -28,7 +28,6 @@ from ..pedagogy import tutor as tutor_svc
 from ..services import compacts as compacts_svc
 from ..services import fun as fun_svc
 from ..services import licenses as lic_svc
-from ..services import market as market_svc
 from ..services import production as prod_svc
 from ..services import shops as shops_svc
 from ..services import stats as stats_svc

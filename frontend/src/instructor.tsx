@@ -1,7 +1,7 @@
 /* The instructor's backstage: dashboard, feed, interventions, pedagogy. */
 import React, { useCallback, useEffect, useState } from "react";
 import { api } from "./api";
-import { GoodIcon, Sparkline } from "./ui";
+import { Asset, GoodIcon, Sparkline } from "./ui";
 
 type Notify = (msg: string, error?: boolean) => void;
 type Prefill = { kind: string; params: Record<string, any> } | null;
@@ -49,20 +49,27 @@ export function InstructorScreen({ wid, notify, tab: tabProp, setTab: setTabProp
 }
 
 function RulesChips({ rules }: { rules: any }) {
-  const chips: { label: string; cls: string }[] = [];
+  const chips: { icon: string; glyph: string; label: string; cls: string }[] = [];
   Object.entries(rules?.ceilings || {}).forEach(([g, p]) =>
-    chips.push({ label: `⚖️ ${g} ceiling ${p}`, cls: "heat-bad" }));
+    chips.push({ icon: "ui/icon_scale", glyph: "⚖️",
+                 label: `${g} ceiling ${p}`, cls: "heat-bad" }));
   Object.entries(rules?.floors || {}).forEach(([g, p]) =>
-    chips.push({ label: `⚖️ ${g} floor ${p}`, cls: "heat-good" }));
+    chips.push({ icon: "ui/icon_scale", glyph: "⚖️",
+                 label: `${g} floor ${p}`, cls: "heat-good" }));
   Object.entries(rules?.taxes || {}).forEach(([g, t]) =>
-    chips.push({ label: `🏛️ ${g} tax ${t}/unit`, cls: "" }));
+    chips.push({ icon: "ui/icon_tax", glyph: "🏛️",
+                 label: `${g} tax ${t}/unit`, cls: "" }));
   Object.entries(rules?.subsidies || {}).forEach(([g, s]) =>
-    chips.push({ label: `🎁 ${g} subsidy ${s}/unit`, cls: "" }));
-  if (rules?.smog_tax) chips.push({ label: `🏭 smog tax ${rules.smog_tax}/unit`, cls: "" });
+    chips.push({ icon: "ui/icon_subsidy", glyph: "🎁",
+                 label: `${g} subsidy ${s}/unit`, cls: "" }));
+  if (rules?.smog_tax)
+    chips.push({ icon: "ui/icon_smog", glyph: "🏭",
+                 label: `smog tax ${rules.smog_tax}/unit`, cls: "" });
   if (chips.length === 0)
     return <span className="muted">No price controls, taxes, or subsidies in force.</span>;
   return <>{chips.map((c) => (
-    <span key={c.label} className={`tag ${c.cls}`}>{c.label}</span>))}</>;
+    <span key={`${c.icon}${c.label}`} className={`tag ${c.cls}`}>
+      <Asset slot={c.icon} glyph={c.glyph} size={14} /> {c.label}</span>))}</>;
 }
 
 function Dashboard({ wid, notify }: { wid: string; notify: Notify }) {
@@ -93,11 +100,13 @@ function Dashboard({ wid, notify }: { wid: string; notify: Notify }) {
                   onClick={() => { navigator.clipboard?.writeText(w.join_code);
                                    notify("Join code copied."); }}>
               Join code: <b>{w.join_code}</b> ⧉</span>
-            {w.smog > 0 && <span className="plaque">Smog {w.smog}</span>}
-            <span className="plaque">🐟 {w.fish_stock}</span>
+            {w.smog > 0 && <span className="plaque">
+              <Asset slot="ui/icon_smog" glyph="🏭" size={14} /> Smog {w.smog}</span>}
+            <span className="plaque" title="fish stock">
+              <GoodIcon good="fish" size={14} /> {w.fish_stock}</span>
             {w.demo && <span className="plaque"
               title="Shared demo world: lifecycle buttons are disabled; interventions work.">
-              🧪 Demo world</span>}
+              <Asset slot="ui/icon_flask" glyph="🧪" size={14} /> Demo world</span>}
           </div>
           <div className="row" style={{ marginTop: 10 }}>
             <button onClick={() => act(`/worlds/${wid}/instructor/close-day`, undefined,
@@ -163,17 +172,19 @@ const MOMENT_RESPONSES: Record<string, (good: string) => Prefill> = {
     params: { good: g, price_mult: 0.9, qty_mult: 1.6, days: 3 } }),
   price_crash: (g) => ({ kind: "demand_shock",
     params: { goods: [g], price_mult: 1.3, qty_mult: 1.5, days: 3 } }),
-  concentration: (g) => ({ kind: "antitrust", params: { good: g } }),
-  cartel: (g) => ({ kind: "antitrust", params: { good: g } }),
-  parallel_pricing: (g) => ({ kind: "antitrust", params: { good: g } }),
-  commons_depletion: () => ({ kind: "fishing_quota",
+  seller_withdrawal: (g) => ({ kind: "repeal_ceiling", params: { good: g } }),
+  market_concentration: (g) => ({ kind: "antitrust", params: { good: g } }),
+  cartel_parallel_pricing: (g) => ({ kind: "antitrust", params: { good: g } }),
+  fishery_depletion: () => ({ kind: "fishing_quota",
     params: { per_player_per_day: 3 } }),
-  smog: () => ({ kind: "smog_tax", params: { per_unit: 3 } }),
+  fishery_collapse: () => ({ kind: "fishing_quota",
+    params: { per_player_per_day: 3 } }),
+  smog_threshold: () => ({ kind: "smog_tax", params: { per_unit: 3 } }),
   disengagement: () => ({ kind: "stimulus", params: { amount: 50 } }),
 };
 
-function goodOf(summary: string): string {
-  return summary.match(/\b(?:in|of|on|for) ([a-z]+)\b/)?.[1] || "";
+function goodOf(m: any): string {
+  return m.payload?.good || "";
 }
 
 function Feed({ wid, onRespond }: {
@@ -188,7 +199,7 @@ function Feed({ wid, onRespond }: {
   // Digest: collapse the daily drumbeat into one card per (kind, good).
   const groups = new Map<string, any[]>();
   for (const m of feed.moments) {
-    const key = `${m.kind}|${goodOf(m.summary)}`;
+    const key = `${m.kind}|${goodOf(m)}`;
     groups.set(key, [...(groups.get(key) || []), m]);
   }
   const sevRank: any = { alert: 2, notable: 1, info: 0 };
@@ -632,6 +643,51 @@ function Markdown({ text }: { text: string }) {
   return <div style={{ fontSize: 14.5 }}>{blocks}</div>;
 }
 
+function MondayBrief({ wid }: { wid: string }) {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [sending, setSending] = useState(false);
+  const [sentTo, setSentTo] = useState("");
+  useEffect(() => {
+    api.get(`/worlds/${wid}/instructor/digest/settings`)
+      .then((out) => setEnabled(out.enabled)).catch(() => setEnabled(true));
+  }, [wid]);
+  async function toggle() {
+    const next = !enabled;
+    setEnabled(next);
+    try { await api.post(`/worlds/${wid}/instructor/digest/settings`,
+                         { enabled: next }); }
+    catch { setEnabled(!next); }
+  }
+  async function sendNow() {
+    setSending(true); setSentTo("");
+    try {
+      const out = await api.post(`/worlds/${wid}/instructor/digest/send`, {});
+      setSentTo(out.sent_to);
+    } catch { /* noop */ }
+    setSending(false);
+  }
+  return (
+    <div className="panel">
+      <h3>Monday Brief</h3>
+      <div className="muted" style={{ marginBottom: 8 }}>
+        Each week, this playbook is emailed to you automatically, along with a
+        class summary, students who may need a nudge, and the gradebook as a
+        CSV attachment. No login required.
+      </div>
+      <div className="row" style={{ alignItems: "center" }}>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 6,
+                        cursor: "pointer" }}>
+          <input type="checkbox" checked={enabled ?? true} onChange={toggle} />
+          Email me the brief each week
+        </label>
+        <button className="quiet" onClick={sendNow} disabled={sending}>
+          {sending ? "Sending…" : "Email me this week's brief now"}</button>
+        {sentTo && <span className="muted">Sent to {sentTo}.</span>}
+      </div>
+    </div>
+  );
+}
+
 function Playbook({ wid }: { wid: string }) {
   const [week, setWeek] = useState<number | "">("");
   const [pb, setPb] = useState<any>(null);
@@ -645,6 +701,7 @@ function Playbook({ wid }: { wid: string }) {
     setBusy(false);
   }
   return (
+    <div className="col">
     <div className="panel">
       <h3>Lecture playbook</h3>
       <div className="muted" style={{ marginBottom: 6 }}>
@@ -670,6 +727,8 @@ function Playbook({ wid }: { wid: string }) {
           <Markdown text={pb.markdown} />
         </div>
       )}
+    </div>
+    <MondayBrief wid={wid} />
     </div>
   );
 }

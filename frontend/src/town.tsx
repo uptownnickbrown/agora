@@ -45,7 +45,7 @@ export function Crier({ wid }: { wid: string }) {
           <section key={day}>
             <div className="crier-kicker" style={{ marginTop: 14,
               borderBottom: "1px solid var(--parchment-edge)", paddingBottom: 2 }}>
-              ☀️ Day {day}
+              Day {day}
             </div>
             {news.map((p, i) => {
               const art = eventArt(p.title);
@@ -64,7 +64,8 @@ export function Crier({ wid }: { wid: string }) {
             })}
             {reports.map((p, i) => (
               <details key={`r${i}`} className="crier-report">
-                <summary>📊 {p.title}</summary>
+                <summary>
+                  <Asset slot="places/market" glyph="📊" size={15} /> {p.title}</summary>
                 <div style={{ whiteSpace: "pre-wrap", fontSize: 13,
                               padding: "6px 0 2px 18px" }} className="muted">
                   {p.body}
@@ -91,13 +92,15 @@ export function Leaderboards({ wid }: { wid: string }) {
   const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
   const podiumCls = (r: any) =>
     r === top3[0] ? "gold" : r === top3[1] ? "silver" : "bronze";
-  const medal = (r: any) => (r === top3[0] ? "🥇" : r === top3[1] ? "🥈" : "🥉");
+  const medal = (r: any) => (
+    <Asset slot={`ui/icon_medal_${podiumCls(r)}`}
+           glyph={r === top3[0] ? "🥇" : r === top3[1] ? "🥈" : "🥉"} size={18} />);
   const maxHouse = Math.max(1, ...boards.houses.map((h: any) => h.net_worth));
 
   return (
     <div className="row">
       <div className="panel grow">
-        <h3>💰 Wealth</h3>
+        <h3><Asset slot="ui/coin" glyph="💰" size={20} /> Wealth</h3>
         <div className="podium">
           {podiumOrder.map((r: any) => (
             <div key={r.merchant} className={`podium-slot ${podiumCls(r)}`}
@@ -121,7 +124,7 @@ export function Leaderboards({ wid }: { wid: string }) {
       </div>
       <div className="col grow">
         <div className="panel">
-          <h3>🏠 Houses</h3>
+          <h3><Asset slot="ui/icon_banner" glyph="🏠" size={20} /> Houses</h3>
           {boards.houses.map((h: any, i: number) => (
             <div key={h.house} className="board-row">
               <span style={{ width: 20 }} className="muted">{i + 1}.</span>
@@ -135,22 +138,26 @@ export function Leaderboards({ wid }: { wid: string }) {
           ))}
         </div>
         <div className="panel">
-          <h3>🧩 Puzzle streaks</h3>
+          <h3><Asset slot="places/puzzle" glyph="🧩" size={20} /> Puzzle streaks</h3>
           {boards.puzzle_streaks.map((s: any) => (
             <div key={s.merchant} className="board-row">
               <span style={{ flex: 1 }}>{s.merchant}</span>
-              <span className="streak-chip">🔥 {s.streak}</span>
+              <span className="streak-chip">
+                <Asset slot="ui/icon_flame" glyph="🔥" size={13} /> {s.streak}</span>
               <span className="muted">best {s.best}</span>
             </div>
           ))}
           {boards.puzzle_streaks.length === 0 &&
-            <div className="muted">No streaks yet — the Daily Ledger awaits.</div>}
+            <div className="muted">No streaks yet. The Daily Ledger awaits.</div>}
         </div>
         <div className="panel">
-          <h3>🎣 Biggest catch</h3>
+          <h3><Asset slot="places/docks" glyph="🎣" size={20} /> Biggest catch</h3>
           {boards.biggest_catch.map((c: any, i: number) => (
             <div key={c.merchant} className="board-row">
-              <span style={{ width: 26 }}>{["🥇", "🥈", "🥉"][i] || `${i + 1}.`}</span>
+              <span style={{ width: 26 }}>{i < 3
+                ? <Asset slot={`ui/icon_medal_${["gold", "silver", "bronze"][i]}`}
+                         glyph={["🥇", "🥈", "🥉"][i]} size={18} />
+                : `${i + 1}.`}</span>
               <span style={{ flex: 1 }}>{c.merchant}</span>
               <b>{(c.weight / 10).toFixed(0)} dram</b>
             </div>
@@ -196,14 +203,16 @@ export function GuildHall({ state, wid, notify, refresh }: {
   return (
     <div className="row">
       <div className="panel grow">
-        <h3>📜 Crown licenses (sealed-bid)</h3>
+        <h3><Asset slot="ui/icon_license" glyph="📜" size={20} />
+          {" "}Crown licenses (sealed-bid)</h3>
         {state.licenses?.length > 0 && (
           <div style={{ marginBottom: 6 }}>
             {state.licenses.map((g) => (
               <span key={g} className="tag"
                     style={{ background: "rgba(217,169,63,0.25)",
                              borderColor: "var(--gold)", fontWeight: 600 }}>
-                👑 you hold the {g} license
+                <Asset slot="ui/icon_license" glyph="👑" size={13} />
+                {" "}You hold the {g} license
               </span>
             ))}
           </div>
@@ -236,21 +245,21 @@ export function GuildHall({ state, wid, notify, refresh }: {
           </div>
         )}
         <hr className="divider" />
-        <h3>🤝 Compacts (week 7)</h3>
+        <h3><Asset slot="ui/icon_handshake" glyph="🤝" size={20} /> Compacts (week 7)</h3>
         <div className="muted">Visible terms. Zero enforcement. What could go wrong?</div>
         {compacts.map((c) => (
           <div key={c.id} className="panel" style={{ padding: 10, marginTop: 8 }}>
             <b>{c.name}</b> <span className="tag">{c.kind}</span>
-            {c.dissolved_day != null && <span className="tag">💀 dissolved</span>}
+            {c.dissolved_day != null && <span className="tag">dissolved</span>}
             <div className="muted">terms: {JSON.stringify(c.terms)}</div>
             <div className="muted">signatories: {c.members.join(", ") || "none"}</div>
             <div className="row" style={{ marginTop: 6 }}>
               <button className="quiet" onClick={() => act(
                 () => api.post(`/worlds/${wid}/compacts/${c.id}/join`), "Signed.")}>
-                sign</button>
+                Sign</button>
               <button className="quiet" onClick={() => act(
                 () => api.post(`/worlds/${wid}/compacts/${c.id}/leave`), "Defected!")}>
-                defect</button>
+                Defect</button>
             </div>
           </div>
         ))}
@@ -272,9 +281,9 @@ export function GuildHall({ state, wid, notify, refresh }: {
 
       <div className="col" style={{ flex: "0 1 300px" }}>
         <div className="panel">
-          <h3>🛟 The Guild's mercy</h3>
-          <div className="muted">Broke? (Under 30 coppers.) The Guild offers a fresh-start
-            loan. Gentle terms. Real interest.</div>
+          <h3><Asset slot="ui/icon_lifering" glyph="🛟" size={20} /> The Guild's mercy</h3>
+          <div className="muted">If you're broke (under 30 coppers), the Guild offers
+            a fresh-start loan with gentle terms and real interest.</div>
           <button className="wood" style={{ marginTop: 8 }} onClick={() => act(
             () => api.post(`/worlds/${wid}/fresh-start`), "The Guild believes in you.")}>
             Request fresh start</button>
@@ -282,7 +291,7 @@ export function GuildHall({ state, wid, notify, refresh }: {
             Outstanding: {state.loan.outstanding} coppers</div>}
         </div>
         <div className="panel">
-          <h3>🛍️ Luxury Boutique</h3>
+          <h3><Asset slot="ui/icon_finery" glyph="🛍️" size={20} /> Luxury Boutique</h3>
           <div className="muted">Pure swagger. The economy thanks you for your
             contribution to the coin sink.</div>
           {Object.entries(boutique).map(([id, item]: [string, any]) => (
@@ -294,7 +303,7 @@ export function GuildHall({ state, wid, notify, refresh }: {
                       onClick={() => act(
                         () => api.post(`/worlds/${wid}/boutique/buy`, { cosmetic_id: id }),
                         "Delivered to your shop. Gorgeous.")}>
-                {state.cosmetics.includes(id) ? "owned" : "buy"}</button>
+                {state.cosmetics.includes(id) ? "Owned" : "Buy"}</button>
             </div>
           ))}
         </div>
@@ -317,7 +326,7 @@ export function Merchant({ wid, notify, refresh }: {
   if (inst.completed) {
     return (
       <div className="panel" style={{ textAlign: "center" }}>
-        <h3>🐫 The Traveling Merchant</h3>
+        <h3><Asset slot="ui/icon_camel" glyph="🐫" size={20} /> The Traveling Merchant</h3>
         <p>You completed the route with a profit of <b>{inst.profit}</b> coppers.
           The merchant tips his hat and moves on.</p>
       </div>
@@ -360,11 +369,11 @@ export function Merchant({ wid, notify, refresh }: {
 
   return (
     <div className="panel">
-      <h3>🐫 The Traveling Merchant</h3>
+      <h3><Asset slot="ui/icon_camel" glyph="🐫" size={20} /> The Traveling Merchant</h3>
       <div className="muted">
         Bankroll {inst.bankroll} coppers, cargo hold {inst.capacity} crates. Buy at each
-        stop; everything sells automatically at the NEXT port. Different towns, different
-        prices — that's the whole trick of trade.
+        stop; everything sells automatically at the NEXT port. Different towns pay
+        different prices, and that's the whole trick of trade.
       </div>
       <div className="row" style={{ marginTop: 10 }}>
         {inst.ports.map((port: string, i: number) => (
@@ -375,7 +384,8 @@ export function Merchant({ wid, notify, refresh }: {
                 <span className="tag" style={cargo[port] > inst.capacity
                   ? { background: "var(--rose)", color: "#fff", borderColor: "transparent" }
                   : {}}>
-                  🧺 {cargo[port]}/{inst.capacity}
+                  <Asset slot="ui/icon_basket" glyph="🧺" size={13} />
+                  {" "}{cargo[port]}/{inst.capacity}
                   {spend[port] > 0 && <> · {spend[port]}c</>}
                 </span>
               )}
@@ -408,7 +418,7 @@ export function Merchant({ wid, notify, refresh }: {
           {overloaded ? "⚠️ a camel can only carry so much"
             : projected !== 0
               ? `projected profit: ${projected > 0 ? "+" : ""}${projected} coppers`
-              : "plan your cargo — buy where it's cheap, it sells at the next stop"}
+              : "plan your cargo: buy where it's cheap, and it sells at the next stop"}
         </span>
       </div>
     </div>
@@ -443,14 +453,17 @@ export function Recap({ wid }: { wid: string }) {
       )}
       <h3 style={{ marginTop: 12 }}>You proved you understand</h3>
       {recap.mastery_strongest.map((m: any) => (
-        <div key={m.lo}>✅ {m.lo} <span className="muted">({m.pct}%)</span></div>
+        <div key={m.lo}>
+          <Asset slot="ui/icon_medal" glyph="✅" size={14} /> {m.lo}{" "}
+          <span className="muted">({m.pct}%)</span></div>
       ))}
       <h3 style={{ marginTop: 12 }}>Honors</h3>
       {recap.achievements.map((a: any) => (
         <span key={a.id} className="tag">
           {String(a.name).startsWith("trophy:")
-            ? <>🎣 {String(a.name).slice(7)}</>
-            : <>🏅 {a.name}</>}
+            ? <><Asset slot="ui/icon_trophy" glyph="🎣" size={13} />{" "}
+                {String(a.name).slice(7)}</>
+            : <><Asset slot="ui/icon_medal" glyph="🏅" size={13} /> {a.name}</>}
         </span>
       ))}
       <div className="muted" style={{ marginTop: 14, textAlign: "center",

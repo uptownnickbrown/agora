@@ -40,6 +40,10 @@ def _moment(world: World, kind: str, severity: str, summary: str, payload: dict 
                           severity=severity, summary=summary, payload=payload or {})
 
 
+def _cap(good_id: str) -> str:
+    return good_id.capitalize()
+
+
 async def _closes(db, world, good_id, n=8) -> list[int]:
     rows = (
         await db.scalars(
@@ -69,13 +73,15 @@ async def _price_moves(db, world) -> list:
         jump = (today - mean) / mean if mean else 0
         if z > 2.5 or jump > 0.4:
             out.append(_moment(world, "price_spike", "notable",
-                               f"{good_id} spiked to {today} (recent mean {mean:.0f}). "
-                               f"Teachable: what shifted — supply or demand?",
+                               f"{_cap(good_id)} spiked to {today}, up from a recent "
+                               f"average of {mean:.0f}. Worth asking the class whether "
+                               f"supply shifted or demand did.",
                                {"good": good_id, "close": today, "z": round(z, 2)}))
         elif z < -2.5 or jump < -0.4:
             out.append(_moment(world, "price_crash", "notable",
-                               f"{good_id} fell to {today} (recent mean {mean:.0f}). "
-                               f"Glut, demand collapse, or entry?",
+                               f"{_cap(good_id)} fell to {today}, down from a recent "
+                               f"average of {mean:.0f}. A glut, fading demand, and new "
+                               f"sellers entering are all candidate stories.",
                                {"good": good_id, "close": today, "z": round(z, 2)}))
     return out
 
@@ -101,9 +107,9 @@ async def _concentration(db, world) -> list:
                 continue
             out.append(_moment(
                 world, "market_concentration", "alert",
-                f"{buyer.merchant_name} took {qty}/{total} of recent {good_id} buying "
-                f"({qty / total:.0%}). A corner forming? Consider teaching monopoly early, "
-                f"or an antitrust action.",
+                f"{buyer.merchant_name} bought {qty} of the last {total} units of "
+                f"{good_id} traded ({qty / total:.0%}). If a corner is forming, this is "
+                f"an early chance to teach monopoly, or to bring an antitrust action.",
                 {"good": good_id, "share": round(qty / total, 2),
                  "player_id": str(buyer_id)}))
     return out
@@ -123,17 +129,19 @@ async def _liquidity_and_shortage(db, world) -> list:
             controlled = snap.good_id in ceilings
             out.append(_moment(
                 world, "shortage", "alert",
-                f"Shortage in {snap.good_id}: {snap.unfilled_demand} units of demand went "
-                f"unfilled vs volume {snap.volume}."
-                + (" A price ceiling is active — shelves are empty and a gray market is"
-                   " likely. This is the Week 3 lesson happening." if controlled else ""),
+                f"{_cap(snap.good_id)} is running short: {snap.unfilled_demand} units of "
+                f"demand went unfilled against a traded volume of {snap.volume}."
+                + (" With the price ceiling in force, empty shelves and a gray market "
+                   "are the textbook prediction, and your students are living it."
+                   if controlled else ""),
                 {"good": snap.good_id, "unfilled": snap.unfilled_demand,
                  "volume": snap.volume, "ceiling_active": controlled}))
         if snap.suppressed_asks > 10 and snap.good_id in ceilings:
             out.append(_moment(
                 world, "seller_withdrawal", "notable",
-                f"Sellers withdrew {snap.suppressed_asks} {snap.good_id} asks above the "
-                f"legal price — withholding in action.",
+                f"Sellers pulled {snap.suppressed_asks} {snap.good_id} asks rather than "
+                f"sell at the legal maximum. That is withholding, just as the model "
+                f"predicts.",
                 {"good": snap.good_id, "suppressed": snap.suppressed_asks}))
     return out
 
@@ -146,9 +154,12 @@ async def _engagement(db, world) -> list:
     missing = [p for p in players if world.world_day - p.last_active_day >= 5]
     if missing:
         names = ", ".join(p.merchant_name for p in missing[:5])
+        if len(missing) > 5:
+            names += f", and {len(missing) - 5} more"
+        noun = "student has" if len(missing) == 1 else "students have"
         out.append(_moment(world, "disengagement", "info",
-                           f"{len(missing)} student(s) inactive 5+ days: {names}"
-                           + ("…" if len(missing) > 5 else ""),
+                           f"{len(missing)} {noun} been inactive for five days or "
+                           f"more: {names}.",
                            {"count": len(missing)}))
     return out
 
@@ -162,17 +173,21 @@ async def _commons(db, world) -> list:
         ratio = world.fish_stock / cap
         if ratio < 0.1:
             out.append(_moment(world, "fishery_collapse", "alert",
-                               f"The fishery has collapsed ({world.fish_stock}/{cap}). "
-                               f"Tragedy of the commons, live. Quota or closed season?",
+                               f"The fishery has collapsed, with stock at "
+                               f"{world.fish_stock} of a possible {cap}. The tragedy of "
+                               f"the commons is playing out live; a quota or a closed "
+                               f"season are the standard remedies.",
                                {"stock": world.fish_stock}))
         elif ratio < 0.3:
             out.append(_moment(world, "fishery_depletion", "notable",
-                               f"Fish stock at {ratio:.0%} of capacity and falling.",
+                               f"Fish stock is down to {ratio:.0%} of capacity and "
+                               f"still falling.",
                                {"stock": world.fish_stock}))
         if world.smog > T.BALANCE["smog_efficiency_threshold"]:
             out.append(_moment(world, "smog_threshold", "notable",
-                               f"District smog at {world.smog} — facility efficiency is "
-                               f"degrading for everyone. Pigouvian moment.",
+                               f"District smog has reached {world.smog}, and facility "
+                               f"efficiency is degrading for everyone. A textbook "
+                               f"opening for a Pigouvian tax.",
                                {"smog": world.smog}))
     return out
 
@@ -222,8 +237,9 @@ async def _cartel_signature(db, world) -> list:
             if len(cluster) >= 3 and len(sellers) >= 2:
                 out.append(_moment(
                     world, "cartel_parallel_pricing", "alert",
-                    f"Compact '{compact.name}' members printed {len(cluster)} {good} "
-                    f"sales at an identical {price} coppers. Cartel discipline holding — "
-                    f"for now. Watch for defection; it makes a great lecture.",
+                    f"Members of the compact '{compact.name}' made {len(cluster)} "
+                    f"{good} sales at an identical {price} coppers. The accord is "
+                    f"holding for now; watch for defection, which makes a great "
+                    f"lecture when it comes.",
                     {"compact": str(compact.id), "good": good, "price": price}))
     return out

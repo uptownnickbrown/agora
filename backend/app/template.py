@@ -5,7 +5,7 @@ these by string id. One canonical template in v1 — resist configuration sprawl
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 TEMPLATE_VERSION = "agora-standard-7wk/1"
 
