@@ -5,7 +5,7 @@ import contextvars
 import uuid
 from typing import Annotated, AsyncIterator
 
-from fastapi import Depends, Header, HTTPException, Path
+from fastapi import Depends, Header, HTTPException, Path, Request
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from .db import make_engine, make_session_factory
@@ -69,12 +69,18 @@ async def world_from_path(db: DB, world_id: uuid.UUID = Path()) -> World:
 WorldDep = Annotated[World, Depends(world_from_path)]
 
 
-async def current_player(db: DB, world: WorldDep, user: CurrentUser) -> Player:
+async def current_player(request: Request, db: DB, world: WorldDep,
+                         user: CurrentUser) -> Player:
     from sqlalchemy import select
 
-    player = await db.scalar(
-        select(Player).where(Player.world_id == world.id, Player.user_id == user.id)
-    )
+    q = select(Player).where(Player.world_id == world.id,
+                             Player.user_id == user.id)
+    # Mutating requests lock the player row: coins, effort and inventory all
+    # hang off it, and two simultaneous actions (double-click, two tabs) must
+    # serialize rather than double-spend. Reads stay lock-free.
+    if request.method not in ("GET", "HEAD", "OPTIONS"):
+        q = q.with_for_update()
+    player = await db.scalar(q)
     if player is None:
         raise HTTPException(403, "you are not enrolled in this world")
     return player

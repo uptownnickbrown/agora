@@ -6,6 +6,8 @@ achievements -> detectors -> stats -> the Crier writes it all up -> next day.
 """
 from __future__ import annotations
 
+from datetime import date
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,6 +39,11 @@ from .worlds import advance_week
 
 async def run_daily_close(db: AsyncSession, world: World) -> dict:
     report: dict = {"world_day": world.world_day}
+    # Stamp the real-world date so the nightly worker can tell "already closed
+    # today" from "due" — without it, a manual close on the same day as the
+    # cron double-advances the world. (Dict reassigned: JSON change tracking.)
+    world.config = {**(world.config or {}),
+                    "last_close_date": date.today().isoformat()}
 
     await _fire_scheduled(db, world)
     unfilled = await expire_orders(db, world)

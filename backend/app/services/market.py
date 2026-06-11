@@ -89,7 +89,11 @@ async def place_order(
             # escrow nothing, validate per-fill below.
             pass
 
-    # Load the live book and match through the shared engine.
+    # Load the live book and match through the shared engine. FOR UPDATE
+    # serializes concurrent matching on this good: without it, two
+    # simultaneous orders both read the same resting order and both fill it
+    # (double-fill). Postgres re-reads locked rows at acquisition, so a
+    # blocked placer sees fresh remaining/status. (SQLite ignores the hint.)
     open_rows = (
         await db.scalars(
             select(DbOrder)
@@ -100,6 +104,7 @@ async def place_order(
                 DbOrder.side != side,
             )
             .order_by(DbOrder.seq)
+            .with_for_update()
         )
     ).all()
     book = OrderBook(good_id)
@@ -127,7 +132,11 @@ async def place_order(
 
     async def load_player(pid: uuid.UUID) -> Player:
         if pid not in players_cache:
-            players_cache[pid] = await db.get(Player, pid)
+            # Locked: counterparty coin/inventory settlement must not race a
+            # concurrent request from that player. (Crossing locks could in
+            # principle deadlock; Postgres aborts one side, which surfaces as
+            # a retryable error — acceptable at course scale.)
+            players_cache[pid] = await db.get(Player, pid, with_for_update=True)
         return players_cache[pid]
 
     taxes = (rules.get("taxes") or {})
