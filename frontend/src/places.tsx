@@ -271,19 +271,31 @@ export function Workshop({ state, wid, notify, refresh }: {
       </div>
 
       <div className="panel grow">
+        <img className="scene-banner" src="/assets/places/workshop_scene.png"
+             alt="" onError={(e) =>
+               (e.target as HTMLImageElement).style.setProperty("display", "none")} />
         <h3>🏭 Your facilities</h3>
         {state.facilities.length === 0 &&
           <div className="muted">No facilities yet. A building works while you sleep —
             that's the whole point of fixed costs.</div>}
         {state.facilities.map((f) => (
-          <div key={f.id} className="panel" style={{ marginBottom: 8, padding: 10 }}>
-            <b>{f.name}</b> (tier {f.tier}) → {f.output}
-            {f.scrubber && " 🌬️ scrubber"}
-            <div className="row" style={{ marginTop: 6 }}>
+          <div key={f.id} className="facility-card">
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <GoodIcon good={f.output} size={34} />
+              <div>
+                <b>{f.name}</b>
+                <div className="muted" style={{ fontSize: 12 }}>
+                  tier {f.tier} · makes {f.output}
+                  {f.workers > 0 && ` · ${f.workers} workers`}
+                  {f.scrubber && " · 🌬️ scrubber"}
+                </div>
+              </div>
+            </div>
+            <div className="row" style={{ marginTop: 8, alignItems: "center" }}>
               <button className="quiet" onClick={() =>
                 facilityAction(`/worlds/${wid}/facilities/${f.id}/upgrade`)}>
-                upgrade (wk4+)</button>
-              <label className="muted">workers (wk4+):
+                ⬆ upgrade</button>
+              <label className="muted">workers:
                 <input type="number" min={0} max={12} defaultValue={f.workers}
                        style={{ width: 56, marginLeft: 4 }}
                        onBlur={(e) => facilityAction(
@@ -293,18 +305,28 @@ export function Workshop({ state, wid, notify, refresh }: {
               {!f.scrubber && state.world.week >= 6 &&
                 <button className="quiet" onClick={() =>
                   facilityAction(`/worlds/${wid}/facilities/${f.id}/scrubber`)}>
-                  fit scrubber (250)</button>}
+                  🌬️ fit scrubber (250)</button>}
             </div>
           </div>
         ))}
         <hr className="divider" />
-        <h3>🏗️ Build (cost 120, week-gated)</h3>
-        <div className="row">
+        <h3>🏗️ Build</h3>
+        <div className="muted" style={{ marginBottom: 8 }}>
+          120 coppers of fixed cost, working for you every night thereafter.
+        </div>
+        <div className="build-grid">
           {FACILITIES.filter(([, label]) =>
-            unlockedGoods.has(label.split("→ ")[1]?.split(" ")[0] || "")).map(([kind, label]) => (
-            <button key={kind} className="wood" style={{ flex: "1 1 150px" }}
-                    onClick={() => build(kind)}>{label}</button>
-          ))}
+            unlockedGoods.has(label.split("→ ")[1]?.split(" ")[0] || "")).map(([kind, label]) => {
+            const [name, output] = label.split(" → ");
+            return (
+              <div key={kind} className="build-card" role="button"
+                   onClick={() => build(kind)}>
+                <GoodIcon good={output.split(" ")[0]} size={34} />
+                <div>{name}</div>
+                <div className="cost">→ {output} · 120c</div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

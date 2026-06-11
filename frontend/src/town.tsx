@@ -11,7 +11,9 @@ function eventArt(title: string): string | null {
   if (/festival|lantern/.test(t)) return "events/festival";
   if (/drought|withers|blight/.test(t)) return "events/drought";
   if (/decree|ceiling|crown.*(price|bread)|repeal/.test(t)) return "events/decree";
-  if (/charter|license|auction/.test(t)) return "events/auction";
+  if (/traveling merchant|caravan/.test(t)) return "events/merchant";
+  if (/charter/.test(t)) return "events/charter";
+  if (/license|auction/.test(t)) return "events/auction";
   if (/smog|gray skies|soot|levy/.test(t)) return "events/gray_skies";
   if (/fishery|quota|fish/.test(t)) return "events/fishery_collapse";
   if (/tournament|market wars|war/.test(t)) return "events/market_wars";
@@ -83,38 +85,79 @@ export function Leaderboards({ wid }: { wid: string }) {
     api.get(`/worlds/${wid}/leaderboards`).then(setBoards).catch(() => {});
   }, [wid]);
   if (!boards) return <div className="panel">The scribes are tallying…</div>;
+
+  const top3 = boards.wealth.slice(0, 3);
+  const rest = boards.wealth.slice(3);
+  const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
+  const podiumCls = (r: any) =>
+    r === top3[0] ? "gold" : r === top3[1] ? "silver" : "bronze";
+  const medal = (r: any) => (r === top3[0] ? "🥇" : r === top3[1] ? "🥈" : "🥉");
+  const maxHouse = Math.max(1, ...boards.houses.map((h: any) => h.net_worth));
+
   return (
     <div className="row">
       <div className="panel grow">
         <h3>💰 Wealth</h3>
-        {boards.wealth.map((r: any, i: number) => (
-          <div key={r.merchant} style={{ display: "flex", gap: 8 }}>
-            <span style={{ width: 26 }}>{["🥇", "🥈", "🥉"][i] || `${i + 1}.`}</span>
+        <div className="podium">
+          {podiumOrder.map((r: any) => (
+            <div key={r.merchant} className={`podium-slot ${podiumCls(r)}`}
+                 style={r === top3[0] ? { transform: "translateY(-6px)" } : {}}>
+              <div className="medal">{medal(r)}</div>
+              <div className="who">{r.merchant}</div>
+              <div className="score">{r.net_worth.toLocaleString()}c</div>
+            </div>
+          ))}
+        </div>
+        {rest.map((r: any, i: number) => (
+          <div key={r.merchant} className="board-row">
+            <span style={{ width: 26 }} className="muted">{i + 4}.</span>
             <span style={{ flex: 1 }}>{r.merchant}</span>
-            <b>{r.net_worth.toLocaleString()}</b>
+            <b>{r.net_worth.toLocaleString()}c</b>
           </div>
         ))}
-        <div className="muted" style={{ marginTop: 8 }}>
+        <div className="muted" style={{ marginTop: 10 }}>
           Wealth buys bragging rights, not grades. The Crown checked.
         </div>
       </div>
-      <div className="panel grow">
-        <h3>🏠 Houses</h3>
-        {boards.houses.map((h: any, i: number) => (
-          <div key={h.house} style={{ display: "flex", gap: 8 }}>
-            <span style={{ width: 26 }}>{i + 1}.</span>
-            <span style={{ flex: 1 }}>{h.house} <span className="muted">({h.members})</span></span>
-            <b>{h.net_worth.toLocaleString()}</b>
-          </div>
-        ))}
-        <h3 style={{ marginTop: 14 }}>🧩 Puzzle streaks</h3>
-        {boards.puzzle_streaks.map((s: any) => (
-          <div key={s.merchant}>{s.merchant}: 🔥 {s.streak} (best {s.best})</div>
-        ))}
-        <h3 style={{ marginTop: 14 }}>🎣 Biggest catch</h3>
-        {boards.biggest_catch.map((c: any) => (
-          <div key={c.merchant}>{c.merchant}: {(c.weight / 10).toFixed(0)}dg</div>
-        ))}
+      <div className="col grow">
+        <div className="panel">
+          <h3>🏠 Houses</h3>
+          {boards.houses.map((h: any, i: number) => (
+            <div key={h.house} className="board-row">
+              <span style={{ width: 20 }} className="muted">{i + 1}.</span>
+              <span style={{ width: 130 }}>{h.house}
+                <span className="muted"> ({h.members})</span></span>
+              <div className="meter"><span style={{
+                width: `${Math.round(100 * h.net_worth / maxHouse)}%` }} /></div>
+              <b style={{ width: 76, textAlign: "right" }}>
+                {h.net_worth.toLocaleString()}</b>
+            </div>
+          ))}
+        </div>
+        <div className="panel">
+          <h3>🧩 Puzzle streaks</h3>
+          {boards.puzzle_streaks.map((s: any) => (
+            <div key={s.merchant} className="board-row">
+              <span style={{ flex: 1 }}>{s.merchant}</span>
+              <span className="streak-chip">🔥 {s.streak}</span>
+              <span className="muted">best {s.best}</span>
+            </div>
+          ))}
+          {boards.puzzle_streaks.length === 0 &&
+            <div className="muted">No streaks yet — the Daily Ledger awaits.</div>}
+        </div>
+        <div className="panel">
+          <h3>🎣 Biggest catch</h3>
+          {boards.biggest_catch.map((c: any, i: number) => (
+            <div key={c.merchant} className="board-row">
+              <span style={{ width: 26 }}>{["🥇", "🥈", "🥉"][i] || `${i + 1}.`}</span>
+              <span style={{ flex: 1 }}>{c.merchant}</span>
+              <b>{(c.weight / 10).toFixed(0)} dram</b>
+            </div>
+          ))}
+          {boards.biggest_catch.length === 0 &&
+            <div className="muted">Nothing landed yet. The Docks are calling.</div>}
+        </div>
       </div>
     </div>
   );

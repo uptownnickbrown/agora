@@ -53,7 +53,8 @@ async def set_listing(
 async def run_retail_demand(db: AsyncSession, world: World, rng: random.Random | None = None) -> int:
     """Daily close: passersby buy from shops. Demand falls with price relative
     to the market close (or anchor): qty ~ base * (ref/price)^2, elastic."""
-    rng = rng or random.Random(f"retail:{world.id}:{world.world_day}")
+    seed = (world.config or {}).get("rng_seed", world.id)
+    rng = rng or random.Random(f"retail:{seed}:{world.world_day}")
     listings = (
         await db.scalars(
             select(ShopListing).where(ShopListing.world_id == world.id, ShopListing.qty > 0)

@@ -21,7 +21,8 @@ ORDERS_PER_SCHEDULE = 6
 
 async def refresh_npc_orders(db: AsyncSession, world: World, rng: random.Random | None = None) -> int:
     """Post the day's NPC flow. Returns number of orders submitted."""
-    rng = rng or random.Random(f"{world.id}:{world.world_day}")
+    seed = (world.config or {}).get("rng_seed", world.id)
+    rng = rng or random.Random(f"{seed}:{world.world_day}")
     schedules = (
         await db.scalars(select(NPCSchedule).where(NPCSchedule.world_id == world.id))
     ).all()

@@ -57,8 +57,8 @@ async def create_world(
     for name in HOUSE_NAMES:
         db.add(Team(world_id=world.id, name=f"House {name}"))
 
-    await _seed_npcs(db, world, expected_students=config.get("expected_students", 30) if config else 30)
-    for beat in T.standard_script(30):
+    await _seed_npcs(db, world, expected_students=n)
+    for beat in T.standard_script(n):
         db.add(ScheduledEvent(world_id=world.id, **beat))
     await emit(db, world, "world_created", {"template": T.TEMPLATE_VERSION})
     await db.flush()

@@ -534,6 +534,52 @@ function Gradebook({ wid }: { wid: string }) {
   );
 }
 
+// Tiny renderer for the playbook's markdown (headings, lists, bold/italics).
+function Markdown({ text }: { text: string }) {
+  const inline = (s: string) => {
+    const out: React.ReactNode[] = [];
+    const re = /\*\*([^*]+)\*\*|\*([^*]+)\*/g;
+    let last = 0, m: RegExpExecArray | null, k = 0;
+    while ((m = re.exec(s))) {
+      if (m.index > last) out.push(s.slice(last, m.index));
+      out.push(m[1] ? <b key={k++}>{m[1]}</b> : <i key={k++}>{m[2]}</i>);
+      last = m.index + m[0].length;
+    }
+    if (last < s.length) out.push(s.slice(last));
+    return out;
+  };
+  const blocks: React.ReactNode[] = [];
+  let list: React.ReactNode[] = [];
+  const flush = (k: string) => {
+    if (list.length) {
+      blocks.push(<ul key={k} style={{ margin: "4px 0 10px", paddingLeft: 22 }}>
+        {list}</ul>);
+      list = [];
+    }
+  };
+  text.split("\n").forEach((line, i) => {
+    const t = line.trim();
+    if (/^#{1,2} /.test(t)) {
+      flush(`f${i}`);
+      blocks.push(<h3 key={i} style={{ marginTop: 14 }}>{inline(t.replace(/^#+ /, ""))}</h3>);
+    } else if (/^### /.test(t)) {
+      flush(`f${i}`);
+      blocks.push(<h4 key={i} style={{ marginTop: 10 }}>{inline(t.slice(4))}</h4>);
+    } else if (/^[-*] /.test(t)) {
+      list.push(<li key={i}>{inline(t.slice(2))}</li>);
+    } else if (/^\d+\. /.test(t)) {
+      list.push(<li key={i}>{inline(t.replace(/^\d+\. /, ""))}</li>);
+    } else if (t === "") {
+      flush(`f${i}`);
+    } else {
+      flush(`f${i}`);
+      blocks.push(<p key={i} style={{ margin: "6px 0" }}>{inline(t)}</p>);
+    }
+  });
+  flush("end");
+  return <div style={{ fontSize: 14.5 }}>{blocks}</div>;
+}
+
 function Playbook({ wid }: { wid: string }) {
   const [week, setWeek] = useState<number | "">("");
   const [pb, setPb] = useState<any>(null);
@@ -565,11 +611,11 @@ function Playbook({ wid }: { wid: string }) {
         }}>copy markdown</button>}
       </div>
       {pb && (
-        <pre style={{ whiteSpace: "pre-wrap", fontFamily: "var(--font-body)",
-                      background: "#fffdf6", padding: 14, borderRadius: 8,
+        <div style={{ background: "#fffdf6", padding: "8px 18px 14px",
+                      borderRadius: 12,
                       border: "1px solid var(--parchment-edge)", marginTop: 10 }}>
-          {pb.markdown}
-        </pre>
+          <Markdown text={pb.markdown} />
+        </div>
       )}
     </div>
   );

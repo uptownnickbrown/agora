@@ -81,7 +81,8 @@ async def main(days: int, suffix: str) -> None:
             prof.is_instructor = True
             world = await worlds_svc.create_world(
                 db, prof, "Econ 101 (QA mid-course)", f"QA-{tag}",
-                {"expected_students": len(PERSONAS), "pacing": "calendar"},
+                {"expected_students": len(PERSONAS), "pacing": "calendar",
+                 "rng_seed": f"qa-testbed-{suffix or 1}"},
             )
             world_id, join_code = world.id, world.join_code
             bots: list[Bot] = []

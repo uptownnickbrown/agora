@@ -64,7 +64,12 @@ async def test_seven_week_semester():
             db.add(prof)
             await db.flush()
             world = await worlds_svc.create_world(
-                db, prof, "Econ 101", "A", {"expected_students": 12, "pacing": "calendar"})
+                db, prof, "Econ 101", "A",
+                {"expected_students": 12, "pacing": "calendar",
+                 # Pin the service-layer RNG streams (NPC orders, retail) so the
+                 # Course Proof is reproducible — world.id is a random UUID and
+                 # marginal phenomena (the Bread Decree bite) flaked on it.
+                 "rng_seed": "course-proof"})
             world_id = world.id
             bots: list[Bot] = []
             for i, persona in enumerate(PERSONAS):
