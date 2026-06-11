@@ -90,9 +90,14 @@ work outside dev.
 
 ## Gotchas (learned the hard way)
 
+- **Auto-deploy requires the Railway GitHub App.** Railway can build a
+  public repo without it, but push webhooks only arrive if the app
+  (github.com/apps/railway-app) is installed with access to the repo. Without
+  it, sources connect and build once but never redeploy on push.
 - **Auto-deploy requires a branch.** `connect_service_source` without
   `branch` deploys once and never again. If pushes stop deploying, reconnect
-  the source *with* `branch: main`.
+  the source *with* `branch: main` — that also force-builds the latest
+  commit, which doubles as the manual deploy step of last resort.
 - **No Railway healthcheck on api.** Railway's probe couldn't reach the
   IPv6-only uvicorn bind and failed deploys that were actually healthy, so
   `health_check_path` is empty. Verify health through the frontend proxy
