@@ -40,14 +40,16 @@ async def create_world(
     section = Section(course_id=course.id, name=section_name)
     db.add(section)
     await db.flush()
+    n = (config or {}).get("expected_students", 30)
     world = World(
         section_id=section.id,
         join_code=secrets.token_hex(4),
         state="onboarding",
         config={"template": T.TEMPLATE_VERSION, "pacing": "manual",
                 "grade_weights": {"participation": 0.5, "mastery": 0.5},
+                "fish_capacity": T.BALANCE["fish_capacity_per_student"] * max(8, n),
                 **(config or {})},
-        fish_stock=T.BALANCE["fish_stock_start"],
+        fish_stock=T.BALANCE["fish_stock_per_student"] * max(8, n),
     )
     db.add(world)
     await db.flush()

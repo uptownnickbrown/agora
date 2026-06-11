@@ -156,7 +156,9 @@ async def _engagement(db, world) -> list:
 async def _commons(db, world) -> list:
     out = []
     if world.current_week >= 6:
-        cap = T.BALANCE["fish_capacity"]
+        from .fun import fish_capacity
+
+        cap = fish_capacity(world)
         ratio = world.fish_stock / cap
         if ratio < 0.1:
             out.append(_moment(world, "fishery_collapse", "alert",
@@ -210,13 +212,18 @@ async def _cartel_signature(db, world) -> list:
             )
         ).all()
         if len(sells) >= 3:
-            prices = [t.price for t in sells]
-            spread = (max(prices) - min(prices)) / max(prices)
-            if spread < 0.03:
+            # Cluster member sale prices: a cartel shows up as a pile of prints
+            # at one identical price (the accord), even amid market noise.
+            buckets: dict[int, list] = {}
+            for t in sells:
+                buckets.setdefault(t.price, []).append(t)
+            price, cluster = max(buckets.items(), key=lambda kv: len(kv[1]))
+            sellers = {t.seller_player_id for t in cluster}
+            if len(cluster) >= 3 and len(sellers) >= 2:
                 out.append(_moment(
                     world, "cartel_parallel_pricing", "alert",
-                    f"Compact '{compact.name}' members sold {good} at near-identical "
-                    f"prices ({min(prices)}–{max(prices)}). Cartel discipline holding — "
+                    f"Compact '{compact.name}' members printed {len(cluster)} {good} "
+                    f"sales at an identical {price} coppers. Cartel discipline holding — "
                     f"for now. Watch for defection; it makes a great lecture.",
-                    {"compact": str(compact.id), "good": good}))
+                    {"compact": str(compact.id), "good": good, "price": price}))
     return out

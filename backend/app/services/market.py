@@ -308,6 +308,14 @@ async def last_close(db: AsyncSession, world: World, good_id: str) -> int | None
     )
 
 
+async def best_bid(db: AsyncSession, world: World, good_id: str) -> int | None:
+    return await db.scalar(
+        select(func.max(DbOrder.price)).where(
+            DbOrder.world_id == world.id, DbOrder.good_id == good_id,
+            DbOrder.side == "buy", DbOrder.status == "open")
+    )
+
+
 async def book_snapshot(db: AsyncSession, world: World, good_id: str, depth: int = 8) -> dict:
     rows = (
         await db.scalars(

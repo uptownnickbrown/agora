@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -6,7 +8,21 @@ from .api import auth, fun, instructor, market, student, tutor
 from .config import get_settings
 from .services.common import GameError
 
-app = FastAPI(title="Agora API", version="0.2.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Dev/SQLite convenience: create the schema in place. Postgres uses alembic.
+    settings = get_settings()
+    if settings.env in ("dev", "test") and settings.database_url.startswith("sqlite"):
+        from .db import Base, make_engine
+
+        engine = make_engine()
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        await engine.dispose()
+    yield
+
+
+app = FastAPI(title="Agora API", version="0.2.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

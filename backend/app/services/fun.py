@@ -122,6 +122,10 @@ TROPHIES = [
 ]
 
 
+def fish_capacity(world: World) -> int:
+    return (world.config or {}).get("fish_capacity", T.BALANCE["fish_capacity"])
+
+
 async def cast_line(db: AsyncSession, world: World, player: Player) -> dict:
     rules = world.fishing_rules or {}
     if rules.get("closed"):
@@ -138,8 +142,9 @@ async def cast_line(db: AsyncSession, world: World, player: Player) -> dict:
         if caught_today >= quota:
             raise GameError(f"royal quota reached ({quota}/day)")
     spend_effort(player, T.BALANCE["fishing_effort_cost"])
-    rng = random.Random()
-    stock_ratio = world.fish_stock / max(1, T.BALANCE["fish_capacity"])
+    # Deterministic per world/player/day/cast: reproducible sims, no rerolls.
+    rng = random.Random(f"cast:{world.id}:{player.id}:{world.world_day}:{player.effort}")
+    stock_ratio = world.fish_stock / max(1, fish_capacity(world))
     # Catch scales with stock: a depleted commons yields nothing (Week 6).
     roll = rng.random()
     qty = 0
@@ -182,11 +187,12 @@ def _stock_hint(ratio: float) -> str:
 
 
 def fishery_regen(world: World) -> None:
-    """Logistic regrowth at daily close — the commons can recover if allowed."""
-    cap = T.BALANCE["fish_capacity"]
+    """Logistic regrowth at daily close — the commons can recover if allowed,
+    but max regrowth (~r*cap/4 ≈ 30/day) loses to a class fishing freely."""
+    cap = fish_capacity(world)
     rate = T.BALANCE["fish_regen_rate_bp"] / 10_000
     s = world.fish_stock
-    world.fish_stock = min(cap, s + max(0, round(rate * s * (1 - s / cap) * 4)))
+    world.fish_stock = min(cap, s + max(0, round(rate * s * (1 - s / cap))))
 
 
 # -- The Traveling Merchant (Week 1 onboarding) ----------------------------------

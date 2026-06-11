@@ -120,12 +120,13 @@ BALANCE = {
     "worker_output_exponent": 0.6,  # diminishing marginal returns (Week 4)
     "scrubber_cost": 250,
     "scrubber_emission_mult": 0.25,
-    "smog_decay_per_day": 30,
+    "smog_decay_per_day": 10,
     "smog_efficiency_threshold": 200,   # above this, facility output degrades
     "smog_efficiency_floor": 0.5,
-    "fish_stock_start": 1000,
+    "fish_stock_per_student": 25,       # the commons scales with the class
+    "fish_capacity_per_student": 40,
     "fish_regen_rate_bp": 800,          # 8%/day logistic regen
-    "fish_capacity": 1500,
+    "fish_capacity": 1500,              # fallback for unscaled worlds
     "fishing_effort_cost": 3,
     "fresh_start_coins": 120,
     "fresh_start_rate_bp": 20,
@@ -207,7 +208,7 @@ def standard_script(n_students: int) -> list[dict]:
          "params": {"per_unit": 3,
                     "headline": "The Crown imposes a soot levy: 3 coppers per measure of smoke."}},
         {"world_day": day(6, 5), "kind": "fishing_quota",
-         "params": {"per_player_per_day": 5,
+         "params": {"per_player_per_day": 2,
                     "headline": "Emergency fishery quota: five fish per merchant per day, by royal order."}},
         # Week 7 — tournament
         {"world_day": day(7, 1), "kind": "tournament_start",

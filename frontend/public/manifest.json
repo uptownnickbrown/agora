@@ -1,0 +1,13 @@
+{
+  "name": "Agora — Live the Economy",
+  "short_name": "Agora",
+  "description": "A multiplayer economic simulation for intro microeconomics.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#2d4a3a",
+  "theme_color": "#2d4a3a",
+  "icons": [
+    { "src": "/assets/brand/icon_192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/brand/icon_512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
