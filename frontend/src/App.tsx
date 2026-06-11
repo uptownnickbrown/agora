@@ -298,6 +298,9 @@ function GameShell({ me, wid, notify, onLeave }: {
       <div className="topbar">
         <div className="banner">AGORA</div>
         <span className="plaque">Week {state.world.week} · Day {state.world.day}</span>
+        {(state.world as any).demo &&
+          <span className="plaque" title="shared playground — it reseeds itself">
+            🧪 demo world</span>}
         <Coins amount={state.player.coins} />
         <EffortBar effort={state.player.effort} />
         {state.world.smog != null && state.world.smog > 0 &&

@@ -87,6 +87,9 @@ function Dashboard({ wid, notify }: { wid: string; notify: Notify }) {
               join code: <b>{w.join_code}</b> ⧉</span>
             {w.smog > 0 && <span className="plaque">smog {w.smog}</span>}
             <span className="plaque">🐟 {w.fish_stock}</span>
+            {w.demo && <span className="plaque"
+              title="shared demo — lifecycle buttons are disabled; interventions work">
+              🧪 demo world</span>}
           </div>
           <div className="row" style={{ marginTop: 10 }}>
             <button onClick={() => act(`/worlds/${wid}/instructor/close-day`, undefined,

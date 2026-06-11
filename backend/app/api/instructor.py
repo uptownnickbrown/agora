@@ -24,6 +24,7 @@ from ..pedagogy.playbook import build_playbook
 from ..services import interventions as int_svc
 from ..services import worlds as worlds_svc
 from ..services.close import run_daily_close
+from ..services.common import GameError
 from ..services.npc import refresh_npc_orders
 
 router = APIRouter(prefix="", tags=["instructor"])
@@ -74,7 +75,8 @@ async def dashboard(db: DB, world: WorldDep, instructor: Instructor):
                   "state": world.state, "join_code": world.join_code,
                   "market_rules": world.market_rules, "smog": world.smog,
                   "fish_stock": world.fish_stock,
-                  "pacing": (world.config or {}).get("pacing")},
+                  "pacing": (world.config or {}).get("pacing"),
+                  "demo": bool((world.config or {}).get("is_demo"))},
         "roster": [{"merchant": p.merchant_name, "coins": p.coins,
                     "last_active_day": p.last_active_day,
                     "player_id": str(p.id)} for p in players],
@@ -146,8 +148,19 @@ async def execute(body: InterventionIn, db: DB, world: WorldDep, instructor: Ins
     return await int_svc.execute(db, world, body.kind, body.params, body.headline)
 
 
+def _not_in_demo(world) -> None:
+    """Lifecycle controls are disabled in the shared demo world — visitors
+    share its god mode, and one click must never end the demo for everyone.
+    (Interventions stay enabled: they're the wow moment, and resets bound them.)"""
+    if (world.config or {}).get("is_demo"):
+        raise GameError("this is the shared demo world — it runs and resets "
+                        "itself, so lifecycle controls are disabled here. "
+                        "Interventions still work; go cause a drought.")
+
+
 @router.post("/worlds/{world_id}/instructor/advance-week")
 async def advance(db: DB, world: WorldDep, instructor: Instructor):
+    _not_in_demo(world)
     await worlds_svc.advance_week(db, world)
     return {"week": world.current_week}
 
@@ -158,6 +171,7 @@ class StateIn(BaseModel):
 
 @router.post("/worlds/{world_id}/instructor/state")
 async def set_state(body: StateIn, db: DB, world: WorldDep, instructor: Instructor):
+    _not_in_demo(world)
     await worlds_svc.set_state(db, world, body.state)
     return {"state": world.state}
 
@@ -165,6 +179,7 @@ async def set_state(body: StateIn, db: DB, world: WorldDep, instructor: Instruct
 @router.post("/worlds/{world_id}/instructor/close-day")
 async def close_day(db: DB, world: WorldDep, instructor: Instructor):
     """Manual daily close (the worker runs this on schedule in production)."""
+    _not_in_demo(world)
     report = await run_daily_close(db, world)
     from ..bus import bus
 

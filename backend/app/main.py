@@ -24,6 +24,33 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Agora API", version="0.2.0", lifespan=lifespan)
 
+
+class CommitBeforeResponse:
+    """Commit the request's DB session before the response is sent (see
+    deps.current_db_session) so read-after-write is consistent across
+    back-to-back requests. Error responses roll back in get_db instead."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def send_wrapper(message):
+            if message["type"] == "http.response.start" and message["status"] < 400:
+                from .deps import current_db_session
+
+                session = current_db_session.get()
+                if session is not None:
+                    await session.commit()
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
+
+
+app.add_middleware(CommitBeforeResponse)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],

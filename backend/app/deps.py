@@ -1,6 +1,7 @@
 """FastAPI dependencies: DB session, auth, role guards, world scoping."""
 from __future__ import annotations
 
+import contextvars
 import uuid
 from typing import Annotated, AsyncIterator
 
@@ -14,6 +15,13 @@ from .services.worlds import instructor_for_world
 
 _session_factory: async_sessionmaker | None = None
 
+# The request's session, for CommitBeforeResponse (main.py). Dependency
+# teardown can run AFTER the response is sent, so committing there leaves a
+# window where a client's immediate follow-up request reads stale state —
+# the middleware commits before the first response byte instead.
+current_db_session: contextvars.ContextVar[AsyncSession | None] = \
+    contextvars.ContextVar("current_db_session", default=None)
+
 
 def set_session_factory(factory: async_sessionmaker) -> None:
     global _session_factory
@@ -25,8 +33,15 @@ async def get_db() -> AsyncIterator[AsyncSession]:
     if _session_factory is None:
         _session_factory = make_session_factory(make_engine())
     async with _session_factory() as session:
-        async with session.begin():
+        token = current_db_session.set(session)
+        try:
             yield session
+            await session.commit()  # safety net; middleware usually beat us
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            current_db_session.reset(token)
 
 
 DB = Annotated[AsyncSession, Depends(get_db)]

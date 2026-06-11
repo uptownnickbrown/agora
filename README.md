@@ -91,6 +91,13 @@ live world as a fresh visitor merchant (or its instructor) with Pip's guided
 tour. The landing page (`/landing/`) has both buttons. Enabled in dev or with
 `AGORA_DEMO_ENABLED=true`.
 
+Demo-world safety: every student click mints its own visitor merchant (two
+simultaneous visitors simply meet in the same market — that's the product);
+god mode is shared, so lifecycle controls (close day / advance week / end
+world) are disabled there while interventions stay live. Reset the shared
+world anytime (or nightly via cron for a public demo) with
+`scripts/reset_demo.py`, which retires the old world and seeds a fresh one.
+
 **QA testbeds:** `scripts/seed_midcourse.py --suffix wN --week N` seeds any
 course week with 12 bot students (accounts `qa{sfx}.*@agora-u.edu`, password
 `agora-qa`); `scripts/qa_screenshots.py` sweeps a 40+ shot matrix (both roles
