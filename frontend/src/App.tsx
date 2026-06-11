@@ -9,11 +9,27 @@ import "./theme.css";
 
 type ToastMsg = { message: string; error?: boolean } | null;
 
+// #/{worldId}/{place|god} — survives refresh, makes places linkable.
+export function parseHash(): { wid: string | null; view: string | null } {
+  const m = location.hash.match(/^#\/([0-9a-f-]{36})(?:\/([a-z]+))?/);
+  return { wid: m?.[1] || null, view: m?.[2] || null };
+}
+
+export function writeHash(wid: string | null, view?: string) {
+  const next = wid ? `#/${wid}${view ? `/${view}` : ""}` : "";
+  if (location.hash !== next) history.replaceState(null, "", next || "#");
+}
+
 export default function App() {
   const [me, setMe] = useState<Me | null>(null);
-  const [worldId, setWorldId] = useState<string | null>(null);
+  const [worldId, setWorldIdState] = useState<string | null>(parseHash().wid);
   const [toast, setToast] = useState<ToastMsg>(null);
   const [authChecked, setAuthChecked] = useState(false);
+
+  const setWorldId = useCallback((wid: string | null) => {
+    setWorldIdState(wid);
+    writeHash(wid);
+  }, []);
 
   const notify = useCallback((message: string, error = false) => {
     setToast({ message, error });
@@ -24,7 +40,13 @@ export default function App() {
     try {
       const m = await api.get("/auth/me");
       setMe(m);
-      if (m.worlds.length === 1) setWorldId(m.worlds[0].world_id);
+      const fromHash = parseHash().wid;
+      if (fromHash && m.worlds.some((w: any) => w.world_id === fromHash)) {
+        setWorldIdState(fromHash);
+      } else if (m.worlds.length === 1) {
+        setWorldIdState(m.worlds[0].world_id);
+        writeHash(m.worlds[0].world_id);
+      }
     } catch { setToken(null); }
     setAuthChecked(true);
   }, []);
@@ -188,10 +210,21 @@ const PLACES: [string, string, string][] = [
 function GameShell({ me, wid, notify, onLeave }: {
   me: Me; wid: string; notify: (m: string, e?: boolean) => void; onLeave: () => void;
 }) {
-  const [place, setPlace] = useState("market");
+  const initialView = parseHash().view;
+  const [place, setPlaceState] = useState(
+    initialView && initialView !== "god" ? initialView : "market");
   const [state, setState] = useState<PlayerState | null>(null);
-  const [isInstructorView, setInstructorView] = useState(false);
+  const [isInstructorView, setInstructorViewState] = useState(initialView === "god");
   const [enrolled, setEnrolled] = useState(true);
+
+  const setPlace = useCallback((p: string) => {
+    setPlaceState(p);
+    writeHash(wid, p);
+  }, [wid]);
+  const setInstructorView = useCallback((on: boolean) => {
+    setInstructorViewState(on);
+    writeHash(wid, on ? "god" : place);
+  }, [wid, place]);
 
   const refresh = useCallback(async () => {
     try {

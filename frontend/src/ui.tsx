@@ -56,29 +56,48 @@ export function Toast({ message, error, onDone }: {
   return <div className={`toast ${error ? "error" : ""}`}>{message}</div>;
 }
 
-export function Sparkline({ points, width = 280, height = 80, stroke = "#5f7a4a" }: {
+export function Sparkline({ points, width = 280, height = 80, stroke = "#5f7a4a",
+                            refLine, refLabel }: {
   points: (number | null)[]; width?: number; height?: number; stroke?: string;
+  refLine?: number | null; refLabel?: string;
 }) {
   const vals = points.filter((p): p is number => p != null);
   if (vals.length < 2) return <div className="muted">not enough history yet</div>;
-  const min = Math.min(...vals), max = Math.max(...vals);
+  let min = Math.min(...vals), max = Math.max(...vals);
+  if (refLine != null) { min = Math.min(min, refLine); max = Math.max(max, refLine); }
   const span = max - min || 1;
-  let i = -1;
-  const coords = points.map((p, idx) => {
-    if (p == null) return null;
-    i++;
-    const x = (idx / (points.length - 1)) * (width - 8) + 4;
-    const y = height - 6 - ((p - min) / span) * (height - 14);
-    return `${x},${y}`;
-  }).filter(Boolean);
+  const X = (idx: number) => (idx / (points.length - 1)) * (width - 46) + 4;
+  const Y = (p: number) => height - 8 - ((p - min) / span) * (height - 20);
+  const pts: { x: number; y: number; v: number }[] = [];
+  points.forEach((p, idx) => { if (p != null) pts.push({ x: X(idx), y: Y(p), v: p }); });
+  const line = pts.map((c) => `${c.x},${c.y}`).join(" ");
+  const area = `${pts[0].x},${height - 6} ${line} ${pts[pts.length - 1].x},${height - 6}`;
+  const last = pts[pts.length - 1];
   return (
     <svg className="sparkline" width={width} height={height}
-         viewBox={`0 0 ${width} ${height}`}>
+         viewBox={`0 0 ${width} ${height}`}
+         style={{ maxWidth: "100%", height: "auto" }}>
+      {[0.25, 0.5, 0.75].map((f) => (
+        <line key={f} x1={4} x2={width - 42} y1={8 + f * (height - 20)}
+              y2={8 + f * (height - 20)} stroke="#3b3023" strokeOpacity={0.07} />
+      ))}
+      <polygon points={area} fill={stroke} opacity={0.12} />
       <polyline fill="none" stroke={stroke} strokeWidth={2.2}
-                strokeLinejoin="round" strokeLinecap="round"
-                points={coords.join(" ")} />
-      <text x={4} y={12} fontSize={11} fill="#6b5d49">{max}</text>
-      <text x={4} y={height - 2} fontSize={11} fill="#6b5d49">{min}</text>
+                strokeLinejoin="round" strokeLinecap="round" points={line} />
+      {refLine != null && (
+        <>
+          <line x1={4} x2={width - 42} y1={Y(refLine)} y2={Y(refLine)}
+                stroke="#b5485d" strokeWidth={1.5} strokeDasharray="5 4" />
+          {refLabel && <text x={6} y={Y(refLine) - 3} fontSize={10}
+                             fill="#b5485d">{refLabel}</text>}
+        </>
+      )}
+      <circle cx={last.x} cy={last.y} r={3.4} fill={stroke}
+              stroke="#fffdf6" strokeWidth={1.4} />
+      <text x={last.x + 7} y={last.y + 4} fontSize={12} fontWeight={700}
+            fill="#3b3023">{last.v}</text>
+      <text x={4} y={12} fontSize={10} fill="#6b5d49">{max}</text>
+      <text x={4} y={height - 1} fontSize={10} fill="#6b5d49">{min}</text>
     </svg>
   );
 }

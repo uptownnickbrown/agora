@@ -82,32 +82,37 @@ export function MarketSquare({ state, wid, notify, refresh }: {
 
   return (
     <div className="row">
-      <div className="panel" style={{ flex: "0 1 200px" }}>
+      <div className="panel goods-panel" style={{ flex: "0 1 200px" }}>
         <div className="kicker">Goods</div>
-        {state.goods.map((g) => (
-          <div key={g.id}
-               className="place-tile"
-               style={{ marginBottom: 6, textAlign: "left", padding: "7px 10px",
-                        display: "flex", alignItems: "center", gap: 8 }}
-               onClick={() => setGood(g.id)}
-               role="button">
-            <GoodIcon good={g.id} />
-            <span style={{ fontWeight: good === g.id ? 700 : 400 }}>{g.name}</span>
-            {g.aptitude && <span title="your aptitude">⭐</span>}
-            {g.license_required && <span title="license required">📜</span>}
-            <span style={{ marginLeft: "auto" }} className="muted">
-              {state.inventory[g.id] || 0}
-            </span>
-          </div>
-        ))}
+        <div className="goods-items">
+          {state.goods.map((g) => (
+            <div key={g.id}
+                 className={`place-tile ${good === g.id ? "active" : ""}`}
+                 style={{ marginBottom: 6, textAlign: "left", padding: "7px 10px",
+                          display: "flex", alignItems: "center", gap: 8 }}
+                 onClick={() => setGood(g.id)}
+                 role="button">
+              <GoodIcon good={g.id} />
+              <span style={{ fontWeight: good === g.id ? 700 : 400 }}>{g.name}</span>
+              {g.aptitude && <span title="your aptitude">⭐</span>}
+              {g.license_required && <span title="license required">📜</span>}
+              <span style={{ marginLeft: "auto", opacity: 0.8 }}>
+                {state.inventory[g.id] || 0}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="col grow">
+      <div className="col grow market-main">
         <div className="panel">
           <h3><GoodIcon good={good} size={26} /> {good} — price chart</h3>
           {ceiling != null && <div className="heat-bad">⚖️ Price ceiling: {ceiling}</div>}
           {floor != null && <div className="heat-good">⚖️ Price floor: {floor}</div>}
-          <Sparkline points={closes} width={420} height={110} />
+          <Sparkline points={closes} width={560} height={130}
+                     refLine={ceiling ?? floor ?? null}
+                     refLabel={ceiling != null ? `ceiling ${ceiling}`
+                       : floor != null ? `floor ${floor}` : undefined} />
           <div className="muted">
             last close: <b>{lastClose ?? "—"}</b>
             {history.length > 0 && history[history.length - 1].unfilled_demand > 0 &&
@@ -150,7 +155,7 @@ export function MarketSquare({ state, wid, notify, refresh }: {
         </div>
       </div>
 
-      <div className="col" style={{ flex: "0 1 260px" }}>
+      <div className="col market-side" style={{ flex: "0 1 260px" }}>
         <div className="panel">
           <h3>Order book</h3>
           <table className="book">
@@ -327,6 +332,9 @@ export function ShopScreen({ state, wid, notify, refresh }: {
     } catch (e: any) { notify(e.message, true); }
   }
 
+  const sellable = state.goods.filter((g) => (state.inventory[g.id] || 0) > 0
+    || listings.some((l) => l.good_id === g.id));
+
   return (
     <div className="row">
       <div className="panel grow">
@@ -337,7 +345,11 @@ export function ShopScreen({ state, wid, notify, refresh }: {
         </div>
         <div className="row" style={{ alignItems: "center" }}>
           <select value={good} onChange={(e) => setGood(e.target.value)}>
-            {state.goods.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+            {state.goods.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name} ({state.inventory[g.id] || 0} held)
+              </option>
+            ))}
           </select>
           <label>price <input type="number" min={1} value={price} style={{ width: 72 }}
                               onChange={(e) => setPrice(+e.target.value)} /></label>
@@ -347,40 +359,80 @@ export function ShopScreen({ state, wid, notify, refresh }: {
         </div>
         <hr className="divider" />
         {listings.map((l) => (
-          <div key={l.good_id} style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <GoodIcon good={l.good_id} />
-            <b>{l.good_id}</b>
-            <span>@ {l.price}</span>
-            <span className="muted">{l.qty} on shelf · {l.sold_total} sold all-time</span>
+          <div key={l.good_id}>
+            <div className="shelf">
+              {Array.from({ length: Math.min(l.qty, 9) }, (_, i) => (
+                <GoodIcon key={i} good={l.good_id} size={30} />
+              ))}
+              {l.qty > 9 && <span style={{ color: "var(--parchment)",
+                fontFamily: "var(--font-display)" }}>+{l.qty - 9}</span>}
+              {l.qty === 0 && <span style={{ color: "var(--parchment)", opacity: 0.7,
+                fontStyle: "italic", fontSize: 13 }}>sold out — restock?</span>}
+              <span className="price-tag">{l.price}c</span>
+            </div>
+            <div className="muted" style={{ marginTop: -4, marginBottom: 8 }}>
+              <b>{l.good_id}</b> · {l.qty} on shelf · {l.sold_total} sold all-time
+            </div>
           </div>
         ))}
-        {listings.length === 0 && <div className="muted">Empty shelves, merchant.</div>}
+        {listings.length === 0 && (
+          <div style={{ textAlign: "center", padding: "16px 0" }}>
+            <div className="shelf" style={{ justifyContent: "center" }}>
+              <span style={{ color: "var(--parchment)", opacity: 0.7,
+                             fontStyle: "italic" }}>bare boards…</span>
+            </div>
+            <div className="muted">Empty shelves, merchant. Stock something —
+              {sellable.length > 0 && <> you're holding {sellable.slice(0, 3)
+                .map((g) => g.name).join(", ")}.</>}
+            </div>
+          </div>
+        )}
       </div>
-      <div className="panel" style={{ flex: "0 1 280px" }}>
-        <h3>Cosmetics</h3>
-        <div className="kicker">earned</div>
-        {state.cosmetics.length === 0 && <div className="muted">none yet — go achieve something</div>}
-        {state.cosmetics.map((c) => <span key={c} className="tag">{c}</span>)}
-        <div className="kicker" style={{ marginTop: 8 }}>achievements</div>
+      <div className="panel" style={{ flex: "0 1 300px" }}>
+        <h3>✨ Your finery</h3>
+        <div className="kicker">cosmetics</div>
+        {state.cosmetics.length === 0 &&
+          <div className="muted">None yet — earn prestige, or buy swagger at the
+            Luxury Boutique in the Guild Hall.</div>}
+        <div className="row" style={{ gap: 8 }}>
+          {state.cosmetics.map((c) => (
+            <div key={c} style={{ textAlign: "center", width: 76 }}>
+              <Asset slot={`cosmetics/${c}`} glyph="🎀" size={56} alt={c} />
+              <div className="muted" style={{ fontSize: 11 }}>{c.replace(/_/g, " ")}</div>
+            </div>
+          ))}
+        </div>
+        <div className="kicker" style={{ marginTop: 10 }}>achievements</div>
+        {state.achievements.length === 0 &&
+          <div className="muted">none yet — go achieve something</div>}
         {state.achievements.map((a) => <span key={a} className="tag">🏅 {a}</span>)}
       </div>
     </div>
   );
 }
 
+const TROPHY_SLUGS: Record<string, string> = {
+  "Smug Trout": "smug_trout",
+  "Old Whiskerjaw": "old_whiskerjaw",
+  "Gilded Leviathan": "gilded_leviathan",
+};
+
 export function Docks({ state, wid, notify, refresh }: {
   state: PlayerState; wid: string; notify: Notify; refresh: () => void;
 }) {
   const [result, setResult] = useState<any>(null);
   const [casting, setCasting] = useState(false);
+  const [catches, setCatches] = useState<any[]>([]);
 
   async function cast() {
     setCasting(true);
+    setResult(null);
     try {
       // a beat of suspense — the timing-gauge feel without trusting the client
-      await new Promise((r) => setTimeout(r, 700));
+      await new Promise((r) => setTimeout(r, 1100));
       const out = await api.post(`/worlds/${wid}/fishing/cast`);
       setResult(out);
+      setCatches((c) => [out, ...c].slice(0, 6));
       if (out.trophy) notify(`🏆 ${out.trophy}!`);
       else if (out.qty) notify(`Caught ${out.qty} fish!`);
       else notify("Nothing biting…", true);
@@ -391,33 +443,86 @@ export function Docks({ state, wid, notify, refresh }: {
 
   const quota = state.world.fishing_rules?.quota;
   const closed = state.world.fishing_rules?.closed;
+  const myTrophies = state.achievements
+    .filter((a) => a.startsWith("trophy:"))
+    .map((a) => a.slice(7));
 
   return (
     <div className="row">
-      <div className="panel grow" style={{ textAlign: "center" }}>
+      <div className="panel grow" style={{ maxWidth: 640 }}>
         <h3>🎣 The Docks</h3>
-        <div style={{ fontSize: 60, margin: "8px 0" }}>
-          <Asset slot="places/docks_scene" glyph={casting ? "🌊" : "⛵"} size={120} />
+        <div className="docks-scene">
+          <img src="/assets/places/docks_scene.png" alt="The docks at dusk" />
+          {casting && <span className="ripple" />}
         </div>
-        {closed && <div className="heat-bad">The fishery is CLOSED by royal order.</div>}
-        {quota != null && !closed &&
-          <div className="heat-bad">Royal quota: {quota} fish per merchant per day.</div>}
-        <button onClick={cast} disabled={casting || !!closed}
-                style={{ fontSize: 17, padding: "12px 30px" }}>
-          {casting ? "The line is out…" : "Cast (3 effort)"}
-        </button>
-        {result && (
-          <div style={{ marginTop: 10 }}>
-            {result.qty > 0
-              ? <>Caught <b>{result.qty}</b> fish ({(result.weight / 10).toFixed(0)}dg)
-                  {result.trophy && <div style={{ fontSize: 18 }}>🏆 <b>{result.trophy}</b></div>}</>
-              : <span className="muted">The hook came back bare.</span>}
-            <div className="muted" style={{ fontStyle: "italic" }}>{result.stock_hint}</div>
+        <div style={{ textAlign: "center", marginTop: 12 }}>
+          {closed && <div className="heat-bad" style={{ marginBottom: 6 }}>
+            The fishery is CLOSED by royal order.</div>}
+          {quota != null && !closed &&
+            <div className="heat-bad" style={{ marginBottom: 6 }}>
+              Royal quota: {quota} fish per merchant per day.</div>}
+          <button onClick={cast} disabled={casting || !!closed}
+                  style={{ fontSize: 17, padding: "12px 34px" }}>
+            {casting ? "The line is out…" : "Cast (3 effort)"}
+          </button>
+          {result && (
+            <div style={{ marginTop: 10 }}>
+              {result.qty > 0
+                ? <div style={{ display: "flex", gap: 8, justifyContent: "center",
+                                alignItems: "center" }}>
+                    {Array.from({ length: result.qty }, (_, i) =>
+                      <GoodIcon key={i} good="fish" size={30} />)}
+                    <b>{result.qty} fish</b>
+                    <span className="muted">({(result.weight / 10).toFixed(0)}dg)</span>
+                  </div>
+                : <span className="muted">The hook came back bare.</span>}
+              {result.trophy && (
+                <div style={{ marginTop: 8 }}>
+                  <Asset slot={`trophies/${TROPHY_SLUGS[result.trophy] || ""}`}
+                         glyph="🏆" size={84} alt={result.trophy} />
+                  <div style={{ fontFamily: "var(--font-display)", fontSize: 17 }}>
+                    🏆 {result.trophy}!</div>
+                </div>
+              )}
+              <div className="muted" style={{ fontStyle: "italic", marginTop: 6 }}>
+                {result.stock_hint}</div>
+            </div>
+          )}
+          <div className="muted" style={{ marginTop: 12 }}>
+            The fishery belongs to everyone. Which is to say: to no one.
+          </div>
+        </div>
+      </div>
+
+      <div className="col" style={{ flex: "0 1 300px" }}>
+        <div className="panel">
+          <h3>🏆 Trophy wall</h3>
+          <div className="trophy-wall">
+            {Object.entries(TROPHY_SLUGS).map(([name, slug]) => (
+              <div key={name}
+                   className={`trophy-slot ${myTrophies.includes(name) ? "" : "empty"}`}
+                   title={myTrophies.includes(name) ? name : `${name} — uncaught`}>
+                <Asset slot={`trophies/${slug}`} glyph="🐟" size={64} alt={name} />
+                <div>{myTrophies.includes(name) ? name : "???"}</div>
+              </div>
+            ))}
+          </div>
+          <div className="muted" style={{ marginTop: 8 }}>
+            Hooked in {state.inventory.fish || 0} fish · sell them in the Market
+            before they get philosophical.
+          </div>
+        </div>
+        {catches.length > 0 && (
+          <div className="panel">
+            <h3>Today's casts</h3>
+            {catches.map((c, i) => (
+              <div key={i} className="muted" style={{ fontSize: 13 }}>
+                {c.qty > 0 ? `🐟 ${c.qty} (${(c.weight / 10).toFixed(0)}dg)` : "— bare hook"}
+                {c.trophy ? ` · 🏆 ${c.trophy}` : ""}
+              </div>
+            ))}
           </div>
         )}
-        <div className="muted" style={{ marginTop: 12 }}>
-          The fishery belongs to everyone. Which is to say: to no one.
-        </div>
       </div>
     </div>
   );

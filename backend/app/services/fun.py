@@ -57,6 +57,9 @@ async def get_puzzle_state(db: AsyncSession, world: World, player: Player) -> di
         )
     )
     guesses = attempt.guesses if attempt else []
+    streak = await db.scalar(
+        select(Streak).where(Streak.player_id == player.id, Streak.kind == "puzzle")
+    )
     return {
         "day": world.world_day,
         "good": p["good"],
@@ -66,6 +69,8 @@ async def get_puzzle_state(db: AsyncSession, world: World, player: Player) -> di
         "solved": bool(attempt and attempt.solved),
         "finished": bool(attempt and attempt.finished),
         "max_guesses": MAX_GUESSES,
+        "streak": streak.count if streak else 0,
+        "streak_best": streak.best if streak else 0,
     }
 
 

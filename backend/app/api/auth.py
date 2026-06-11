@@ -59,7 +59,7 @@ async def magic_redeem(body: RedeemIn, db: DB):
 async def me(user: CurrentUser, db: DB):
     from sqlalchemy import select
 
-    from ..models import Player, World
+    from ..models import Course, Player, Section, World
 
     players = (
         await db.scalars(select(Player).where(Player.user_id == user.id))
@@ -69,6 +69,19 @@ async def me(user: CurrentUser, db: DB):
         w = await db.get(World, p.world_id)
         worlds.append({"world_id": str(w.id), "merchant": p.merchant_name,
                        "week": w.current_week, "state": w.state})
+    # Instructors also see the worlds they own (they have no Player row).
+    seen = {w["world_id"] for w in worlds}
+    owned = (
+        await db.scalars(
+            select(World).join(Section, World.section_id == Section.id)
+            .join(Course, Section.course_id == Course.id)
+            .where(Course.instructor_id == user.id)
+        )
+    ).all()
+    for w in owned:
+        if str(w.id) not in seen:
+            worlds.append({"world_id": str(w.id), "merchant": "⚖️ instructor",
+                           "week": w.current_week, "state": w.state})
     return {"user_id": str(user.id), "email": user.email,
             "display_name": user.display_name, "is_instructor": user.is_instructor,
             "is_admin": user.is_platform_admin, "worlds": worlds}

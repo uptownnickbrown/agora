@@ -1,3 +1,9 @@
+x-backend-env: &backend-env
+  AGORA_DATABASE_URL: postgresql+asyncpg://agora:agora@postgres:5432/agora
+  AGORA_REDIS_URL: redis://redis:6379/0
+  # From repo-root .env (compose interpolates it automatically); empty = canned tutor.
+  AGORA_ANTHROPIC_API_KEY: ${AGORA_ANTHROPIC_API_KEY:-}
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -7,26 +13,56 @@ services:
       POSTGRES_DB: agora
     ports: ["5432:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agora -d agora"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
 
   redis:
     image: redis:7-alpine
     ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  # One-shot schema migration. Runs `alembic upgrade head` and exits 0.
+  # This is the same release-step pattern used on Railway (DECISIONS: alembic
+  # is the source of truth for Postgres schema; the app never create_all's it).
+  migrate:
+    build: ./backend
+    command: alembic upgrade head
+    environment: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
 
   api:
     build: ./backend
-    environment:
-      AGORA_DATABASE_URL: postgresql+asyncpg://agora:agora@postgres:5432/agora
-      AGORA_REDIS_URL: redis://redis:6379/0
+    environment: *backend-env
     ports: ["8000:8000"]
-    depends_on: [postgres, redis]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   worker:
     build: ./backend
     command: arq app.worker.WorkerSettings
-    environment:
-      AGORA_DATABASE_URL: postgresql+asyncpg://agora:agora@postgres:5432/agora
-      AGORA_REDIS_URL: redis://redis:6379/0
-    depends_on: [postgres, redis]
+    environment: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   frontend:
     build: ./frontend

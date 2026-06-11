@@ -1,7 +1,7 @@
 /* Professor Pip: chat dock + tutor checks + the daily puzzle. */
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./api";
-import { Asset } from "./ui";
+import { Asset, Confetti } from "./ui";
 
 type Notify = (msg: string, error?: boolean) => void;
 
@@ -14,7 +14,11 @@ export function PipDock({ wid, nudge }: { wid: string; nudge: string | null }) {
   const [check, setCheck] = useState<any>(null);
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState<any>(null);
+  const [nudgeDismissed, setNudgeDismissed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // a fresh nudge un-dismisses; an old one stays dismissed
+  useEffect(() => { setNudgeDismissed(false); }, [nudge]);
 
   const loadHistory = useCallback(
     () => api.get(`/worlds/${wid}/tutor/history`).then(setHistory).catch(() => {}),
@@ -60,15 +64,19 @@ export function PipDock({ wid, nudge }: { wid: string; nudge: string | null }) {
   if (!open) {
     return (
       <div className="pip-dock" style={{ width: "auto" }}>
-        {nudge && (
-          <div className="pip-bubble" style={{ marginBottom: 8, maxWidth: 300 }}>
+        {nudge && !nudgeDismissed && (
+          <div className="pip-bubble nudge" style={{ marginBottom: 8, maxWidth: 300,
+                                                     paddingRight: 26 }}>
+            <button className="dismiss" aria-label="dismiss"
+                    onClick={() => setNudgeDismissed(true)}>✕</button>
             {nudge}
           </div>
         )}
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <div className="pip-avatar" role="button" title="Professor Pip"
+          <div className="pip-avatar" role="button" title="Ask Professor Pip"
                style={{ cursor: "pointer" }} onClick={() => setOpen(true)}>
-            <Asset slot="pip/pip_idle" glyph="🐦" size={58} alt="Professor Pip" />
+            <Asset slot={nudge && !nudgeDismissed ? "pip/pip_talking" : "pip/pip_idle"}
+                   glyph="🐦" size={58} alt="Professor Pip" />
           </div>
         </div>
       </div>
@@ -80,7 +88,9 @@ export function PipDock({ wid, nudge }: { wid: string; nudge: string | null }) {
       <div className="panel" style={{ padding: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div className="pip-avatar" style={{ width: 44, height: 44 }}>
-            <Asset slot="pip/pip_idle" glyph="🐦" size={38} alt="Professor Pip" />
+            <Asset slot={busy ? "pip/pip_talking"
+                     : feedback?.correct ? "pip/pip_celebrating" : "pip/pip_idle"}
+                   glyph="🐦" size={38} alt="Professor Pip" />
           </div>
           <div>
             <b>Professor Pip</b>
@@ -150,6 +160,7 @@ export function PipDock({ wid, nudge }: { wid: string; nudge: string | null }) {
                           onClick={submitCheck}>Answer</button>
                 ) : (
                   <div className="msg tutor" style={{ marginTop: 8 }}>
+                    {feedback.correct && <Confetti />}
                     <b className={feedback.correct ? "heat-good" : "heat-bad"}>
                       {feedback.correct ? `✓ ${feedback.score}/100` : `✗ ${feedback.score}/100`}
                     </b>{" "}
@@ -205,6 +216,15 @@ export function Puzzle({ wid, notify, refresh }: {
     <div className="panel" style={{ maxWidth: 480, margin: "0 auto",
                                     textAlign: "center" }}>
       <h3>🧮 Market Mastermind — Day {state.day}</h3>
+      {(state.streak > 0 || state.streak_best > 0) && (
+        <div style={{ marginBottom: 8 }}>
+          <span className="streak-chip" title="puzzle streak">
+            🔥 {state.streak} day{state.streak === 1 ? "" : "s"}
+            {state.streak_best > state.streak && <span style={{ opacity: 0.7 }}>
+              &nbsp;· best {state.streak_best}</span>}
+          </span>
+        </div>
+      )}
       <p>The mystery: yesterday's close for <b>{state.good}</b>.</p>
       <p className="muted" style={{ fontStyle: "italic" }}>Clue: {state.clue}</p>
       <div className="puzzle-grid" style={{ alignItems: "center" }}>
@@ -229,7 +249,14 @@ export function Puzzle({ wid, notify, refresh }: {
         </div>
       ) : (
         <div>
-          <p>{state.solved ? "Solved! 🎉" : "Closed for the day."}</p>
+          {state.solved && <Confetti />}
+          <div style={{ margin: "6px 0" }}>
+            <Asset slot={state.solved ? "pip/pip_celebrating" : "pip/pip_concerned"}
+                   glyph={state.solved ? "🎉" : "🐦"} size={72}
+                   alt={state.solved ? "Pip celebrates" : "Pip consoles"} />
+          </div>
+          <p>{state.solved ? "Solved! +2 effort, and Pip is insufferably proud."
+            : "Closed for the day. Tomorrow, redemption."}</p>
           <div style={{ fontSize: 22, letterSpacing: 2 }}>{shareCard}</div>
           <button className="quiet" style={{ marginTop: 6 }}
                   onClick={() => {

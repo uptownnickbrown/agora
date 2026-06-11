@@ -109,8 +109,21 @@ async def feed(db: DB, world: WorldDep, instructor: Instructor, limit: int = 50)
 
 
 @router.get("/worlds/{world_id}/instructor/interventions")
-async def catalog(world: WorldDep, instructor: Instructor):
-    return int_svc.CATALOG
+async def catalog(db: DB, world: WorldDep, instructor: Instructor):
+    from ..models import Player
+
+    roster = (
+        await db.scalars(
+            select(Player).where(Player.world_id == world.id, ~Player.is_npc)
+        )
+    ).all()
+    return {
+        "catalog": int_svc.CATALOG,
+        "goods": [{"id": g.id, "name": g.name, "unlock_week": g.unlock_week}
+                  for g in T.GOODS.values()],
+        "roster": [{"player_id": str(p.id), "merchant": p.merchant_name}
+                   for p in roster],
+    }
 
 
 class InterventionIn(BaseModel):

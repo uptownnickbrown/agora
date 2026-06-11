@@ -5,28 +5,73 @@ import { Asset, Coins, GoodIcon, Sparkline } from "./ui";
 
 type Notify = (msg: string, error?: boolean) => void;
 
+// Map a headline to the event painting it deserves.
+function eventArt(title: string): string | null {
+  const t = title.toLowerCase();
+  if (/festival|lantern/.test(t)) return "events/festival";
+  if (/drought|withers|blight/.test(t)) return "events/drought";
+  if (/decree|ceiling|crown.*(price|bread)|repeal/.test(t)) return "events/decree";
+  if (/charter|license|auction/.test(t)) return "events/auction";
+  if (/smog|gray skies|soot|levy/.test(t)) return "events/gray_skies";
+  if (/fishery|quota|fish/.test(t)) return "events/fishery_collapse";
+  if (/tournament|market wars|war/.test(t)) return "events/market_wars";
+  return null;
+}
+
 export function Crier({ wid }: { wid: string }) {
   const [posts, setPosts] = useState<any[]>([]);
   useEffect(() => {
     api.get(`/worlds/${wid}/crier`).then(setPosts).catch(() => {});
   }, [wid]);
+
+  const days = [...new Set(posts.map((p) => p.day))].sort((a, b) => b - a);
+
   return (
     <div className="panel" style={{ maxWidth: 760, margin: "0 auto" }}>
       <div style={{ textAlign: "center", borderBottom: "3px double var(--ink)",
                     paddingBottom: 8, marginBottom: 8 }}>
-        <Asset slot="crier/masthead" glyph="📯" size={46} />
+        <Asset slot="crier/masthead" glyph="📯" size={64} />
         <h2 style={{ margin: 0 }}>The Agora Crier</h2>
         <div className="muted" style={{ fontStyle: "italic" }}>
           All the news that's fit to squawk
         </div>
       </div>
-      {posts.map((p, i) => (
-        <article key={i} className="crier-post">
-          <div className="crier-kicker">Day {p.day} · {p.kind.replace("_", " ")}</div>
-          <h4>{p.title}</h4>
-          <div style={{ whiteSpace: "pre-wrap", fontSize: 14 }}>{p.body}</div>
-        </article>
-      ))}
+      {days.map((day) => {
+        const news = posts.filter((p) => p.day === day && p.kind !== "market_report");
+        const reports = posts.filter((p) => p.day === day && p.kind === "market_report");
+        return (
+          <section key={day}>
+            <div className="crier-kicker" style={{ marginTop: 14,
+              borderBottom: "1px solid var(--parchment-edge)", paddingBottom: 2 }}>
+              ☀️ Day {day}
+            </div>
+            {news.map((p, i) => {
+              const art = eventArt(p.title);
+              return (
+                <article key={`n${i}`} className="crier-feature">
+                  {art && <img className="art" src={`/assets/${art}.png`} alt=""
+                               onError={(e) => (e.target as HTMLImageElement)
+                                 .style.setProperty("display", "none")} />}
+                  <div className="body" style={art ? {} : { padding: "10px 14px" }}>
+                    <div className="crier-kicker">{p.kind}</div>
+                    <h4 style={{ fontSize: 17 }}>{p.title}</h4>
+                    <div style={{ whiteSpace: "pre-wrap", fontSize: 14 }}>{p.body}</div>
+                  </div>
+                </article>
+              );
+            })}
+            {reports.map((p, i) => (
+              <details key={`r${i}`} className="crier-report">
+                <summary>📊 {p.title}</summary>
+                <div style={{ whiteSpace: "pre-wrap", fontSize: 13,
+                              padding: "6px 0 2px 18px" }} className="muted">
+                  {p.body}
+                </div>
+              </details>
+            ))}
+          </section>
+        );
+      })}
       {posts.length === 0 && <div className="muted">No news yet. Suspicious.</div>}
     </div>
   );
@@ -80,19 +125,24 @@ export function GuildHall({ state, wid, notify, refresh }: {
 }) {
   const [boutique, setBoutique] = useState<Record<string, any>>({});
   const [compacts, setCompacts] = useState<any[]>([]);
-  const [auctionId, setAuctionId] = useState("glowdye-1");
+  const [auctions, setAuctions] = useState<any[]>([]);
+  const [auctionId, setAuctionId] = useState("");
   const [bid, setBid] = useState(100);
   const [compactName, setCompactName] = useState("");
   const [compactGood, setCompactGood] = useState("cloth");
   const [compactPrice, setCompactPrice] = useState(80);
 
   const load = useCallback(async () => {
-    const [b, c] = await Promise.all([
+    const [b, c, a] = await Promise.all([
       api.get(`/worlds/${wid}/boutique`),
       api.get(`/worlds/${wid}/compacts`),
+      api.get(`/worlds/${wid}/license-auctions`).catch(() => []),
     ]);
-    setBoutique(b); setCompacts(c);
-  }, [wid]);
+    setBoutique(b); setCompacts(c); setAuctions(a);
+    if (a.length && !a.some((x: any) => x.auction_id === auctionId)) {
+      setAuctionId(a[0].auction_id);
+    }
+  }, [wid, auctionId]);
   useEffect(() => { load().catch(() => {}); }, [load]);
 
   async function act(fn: () => Promise<any>, msg: string) {
@@ -106,16 +156,31 @@ export function GuildHall({ state, wid, notify, refresh }: {
         <h3>📜 Crown licenses (sealed-bid)</h3>
         <div className="muted">When the Crier announces an auction, place your bid.
           Top bids win; you pay what you bid. Tell no one your number.</div>
-        <div className="row" style={{ alignItems: "center", marginTop: 8 }}>
-          <input value={auctionId} onChange={(e) => setAuctionId(e.target.value)}
-                 style={{ width: 110 }} />
-          <input type="number" value={bid} onChange={(e) => setBid(+e.target.value)}
-                 style={{ width: 90 }} />
-          <button onClick={() => act(
-            () => api.post(`/worlds/${wid}/license-bids`,
-                           { auction_id: auctionId, amount: bid }),
-            "Bid sealed and submitted.")}>Submit bid</button>
-        </div>
+        {auctions.length === 0 ? (
+          <div className="muted" style={{ marginTop: 8, fontStyle: "italic" }}>
+            No auctions open today. The Crown announces them in the Crier
+            (week 5, traditionally).
+          </div>
+        ) : (
+          <div className="row" style={{ alignItems: "center", marginTop: 8 }}>
+            <select value={auctionId} onChange={(e) => setAuctionId(e.target.value)}>
+              {auctions.map((a) => (
+                <option key={a.auction_id} value={a.auction_id}>
+                  {a.good} — {a.licenses} licenses, closes day {a.closes_day}
+                </option>
+              ))}
+            </select>
+            <input type="number" value={bid} onChange={(e) => setBid(+e.target.value)}
+                   style={{ width: 90 }} />
+            <button onClick={() => act(
+              () => api.post(`/worlds/${wid}/license-bids`,
+                             { auction_id: auctionId, amount: bid }),
+              "Bid sealed and submitted.")}>Submit bid</button>
+            {auctions.find((a) => a.auction_id === auctionId)?.my_bid != null &&
+              <span className="tag">your sealed bid: {
+                auctions.find((a) => a.auction_id === auctionId).my_bid}c</span>}
+          </div>
+        )}
         <hr className="divider" />
         <h3>🤝 Compacts (week 7)</h3>
         <div className="muted">Visible terms. Zero enforcement. What could go wrong?</div>

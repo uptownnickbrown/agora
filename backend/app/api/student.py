@@ -287,6 +287,36 @@ async def bid_license(body: BidIn, db: DB, world: WorldDep, player: CurrentPlaye
             "note": "Sealed. Not even Pip knows the other bids."}
 
 
+@router.get("/worlds/{world_id}/license-auctions")
+async def open_auctions(db: DB, world: WorldDep, player: CurrentPlayer):
+    """Open sealed-bid auctions (the Crier announces them; this lists them)."""
+    from ..models import LicenseBid, ScheduledEvent
+
+    events = (
+        await db.scalars(
+            select(ScheduledEvent).where(
+                ScheduledEvent.world_id == world.id,
+                ScheduledEvent.kind == "license_auction_close",
+                ~ScheduledEvent.executed,
+            )
+        )
+    ).all()
+    out = []
+    for e in events:
+        my_bid = await db.scalar(
+            select(LicenseBid.amount).where(
+                LicenseBid.world_id == world.id,
+                LicenseBid.auction_id == e.params.get("auction_id", ""),
+                LicenseBid.player_id == player.id,
+            )
+        )
+        out.append({"auction_id": e.params.get("auction_id"),
+                    "good": e.params.get("good"),
+                    "licenses": e.params.get("licenses"),
+                    "closes_day": e.world_day, "my_bid": my_bid})
+    return out
+
+
 @router.get("/worlds/{world_id}/recap")
 async def my_recap(db: DB, world: WorldDep, player: CurrentPlayer):
     if world.state not in ("epilogue", "archived") and world.current_week < 7:
