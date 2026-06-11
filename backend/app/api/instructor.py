@@ -153,6 +153,9 @@ async def set_state(body: StateIn, db: DB, world: WorldDep, instructor: Instruct
 async def close_day(db: DB, world: WorldDep, instructor: Instructor):
     """Manual daily close (the worker runs this on schedule in production)."""
     report = await run_daily_close(db, world)
+    from ..bus import bus
+
+    bus.publish(str(world.id), {"type": "day_closed", "day": report["world_day"]})
     return report
 
 

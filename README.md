@@ -1,67 +1,127 @@
 # Agora
 
-A multiplayer economic simulation that teaches introductory microeconomics by making
-students live inside a working economy. A class of 20–80 students inhabits a shared
-fantasy-flavored market town for ~7 weeks: gathering, crafting, trading on live
-order-book markets, building production facilities — while every mechanic IS a
-syllabus concept and an LLM tutor ("Professor Pip") weaves assessment into play.
+A multiplayer economic simulation that teaches introductory microeconomics by
+making students live inside a working economy. A class of 20–80 students
+inhabits a fantasy-flavored market town for seven weeks: gathering, crafting,
+trading on live order-book markets, building facilities, fishing a doomed
+commons — while every mechanic IS a syllabus concept, Professor Pip (an
+LLM-backed tutor pigeon) weaves assessment into play, and the instructor runs
+the world from a low-touch god-mode dashboard.
 
 - **Spec:** [docs/SPEC.md](docs/SPEC.md)
-- **Founding decisions (stack, design calls):** [docs/DECISIONS.md](docs/DECISIONS.md)
+- **Founding decisions:** [docs/DECISIONS.md](docs/DECISIONS.md)
+- **Art pipeline:** [docs/ASSET_WISHLIST.md](docs/ASSET_WISHLIST.md)
+- **Licensing/attribution:** [docs/ATTRIBUTION.md](docs/ATTRIBUTION.md)
 
-## Status
+## What's built (everything in spec phases 0–3, v1 scope)
 
-Pre-Phase-0. The **headless economy harness is built and green** — per spec §14 item 15,
-the simulation engine had to prove the promised classroom phenomena before any UI work:
+**Simulation layer** — continuous double-auction order books per good
+(price-time priority, partial fills, escrow), NPC liquidity from configurable
+supply/demand schedules that auto-scale with class size, production facilities
+(3 tiers, upkeep, hired workers with diminishing returns), gathering with
+aptitudes, hand-craft recipes, posted-price shops with price-sensitive NPC
+retail, smog externalities + scrubbers, a logistic-regen fishery commons,
+Crown licenses via sealed-bid auctions, compacts with zero enforcement, soft
+bankruptcy via Guild loans, daily market close with OHLCV snapshots and the
+Agora Crier's named-movers report.
 
-| Phenomenon | Scenario | Result |
-|---|---|---|
-| CDA converges to competitive equilibrium | `convergence` | closes settle at p* ≈ 72 |
-| Festival Rush: demand shock → spike → supply response → glut (Week 2) | `festival_rush` | 43 → 164 → 47, shortage visible at the peak |
-| Bread Decree: drought → ceiling → empty shelves (Week 3) | `bread_ceiling` | volume 88→13/day, ~75 units/day unmet demand, seller withdrawal visible |
-| Ceiling repeal restores the market | `test_ceiling_repeal_*` | trade resumes post-repeal |
+**Pedagogy layer** — 29 learning objectives adapted from OpenStax Ch. 2–13,
+36 context-triggered tutor checks (MCQ + LLM-graded free response with keyword
+fallback), mastery EMA tracking, Professor Pip chat (Sonnet 4.6, prompt-cached,
+budget-capped, canned degradation), proactive nudges, moment detection (price
+spikes, concentration, shortages, seller withdrawal, cartel parallel pricing,
+commons depletion, disengagement), one-click diegetic interventions (16 kinds,
+previewable, schedulable), lecture playbook generator (Opus 4.8 polish
+optional), gradebook (participation + mastery, CSV), mastery heatmap, and the
+epilogue "Your Economic Story" recap.
 
-A bonus emergent result: the bread ceiling suppresses bakers' grain bidding
-(derived demand), starving the *input* market — unscripted, correct economics.
+**Fun layer** — Market Mastermind daily puzzle (seeded per world-day, heat
+feedback, share cards, streaks), dockside fishing with trophies and stock-
+dependent yields, the Traveling Merchant comparative-advantage onboarding,
+achievements, earned prestige cosmetics + a coin-priced Luxury Boutique.
 
-## Run the simulation harness
+**The seven-week arc** ships as scripted world beats: Lantern Festival demand
+shock (wk2), drought + Bread Decree price ceiling + repeal (wk3), Charter
+Choice demand swing (wk4), two glowdye license auctions (wk5), Gray Skies smog
++ soot levy + fishery quota (wk6), and the Market Wars team tournament (wk7).
+
+## Tests (49, all green)
 
 ```bash
 cd backend
-pip install -e ".[dev]"   # or just: pip install pytest (engine has no deps)
-python -m sim.run                  # all scenarios, day-by-day market tables
-python -m sim.run festival_rush    # one scenario
-python -m pytest                   # the Phase-0 economic gate, 3 seeds each
+pip install -e ".[dev]" aiosqlite email-validator anyio
+python -m pytest                 # engine + API + WS + admin (~15s w/o slow)
+python -m pytest tests/test_semester.py   # the FULL SEMESTER (~70s):
 ```
 
-The engine (`backend/app/engine/`) is pure Python with zero dependencies — the same
-code the production server will wrap with persistence and an API.
+`test_semester.py` is the crown jewel: 12 scripted bot students (traders,
+producers, anglers, license tycoons, cartelists) play all 49 days through the
+real service layer, and the test asserts every week's promised phenomenon
+actually emerges — festival spike, decree shortage and repeal recovery,
+monopoly margins compressed by entry, fishery decline and post-quota recovery,
+smog, cartel detection, tournament, and grading artifacts built from real data.
+
+The pure-engine harness (`backend/sim/`) remains the balance laboratory:
+
+```bash
+python -m sim.run                # day-by-day tables for all scenarios
+```
+
+## Run it
+
+```bash
+docker compose up --build
+# app  -> http://localhost:5173   (vite dev: cd frontend && npm i && npm run dev)
+# api  -> http://localhost:8000/docs
+```
+
+Local dev without Docker:
+
+```bash
+cd backend && pip install -e .
+AGORA_ENV=dev AGORA_DATABASE_URL=sqlite+aiosqlite:////tmp/agora.db \
+  uvicorn app.main:app --reload     # auto-creates schema on SQLite
+cd frontend && npm install && npm run dev
+```
+
+Then: register → "Create a world" (you become its instructor) → open a private
+window, register a student, join with the code → trade against the NPC book →
+in god mode, run "daily close" to advance the world. The tutor runs canned
+until `AGORA_ANTHROPIC_API_KEY` is set (Haiku 4.5 classification, Sonnet 4.6
+tutoring, Opus 4.8 playbooks — DECISIONS.md #7).
 
 ## Layout
 
 ```
 backend/
-  app/engine/      # the economy: order book, NPC schedules, agents, world ticks
-  app/             # FastAPI app, SQLAlchemy models, ARQ worker (skeletons)
-  sim/             # headless scenarios + runner (the balance laboratory)
-  tests/           # order-book unit tests + the economic phenomena gate
-frontend/          # React + Vite + TS placeholder
-docs/              # SPEC.md, DECISIONS.md
-docker-compose.yml # postgres + redis + api + worker + frontend
+  app/engine/      # pure CDA matching engine (shared by server + harness)
+  app/services/    # markets, worlds, production, shops, npc, close, detectors,
+                   # interventions, licenses, compacts, fun, stats, auth
+  app/pedagogy/    # LO graph + question bank, Pip, grades, playbook, recap
+  app/api/         # auth, student, market, fun, tutor, instructor, admin, ws
+  app/template.py  # the "Agora Standard 7-Week" world definition
+  sim/             # headless balance harness
+  tests/           # 50 tests incl. the full-semester simulation (bots.py)
+frontend/          # React SPA, parchment-on-felt design system, PWA manifest
+docs/              # SPEC, DECISIONS, ASSET_WISHLIST, ATTRIBUTION
 ```
 
-## Local stack
+## Deploy (Railway)
 
-```bash
-docker compose up --build
-# api  -> http://localhost:8000/health
-# app  -> http://localhost:5173
-```
+Three services from two Dockerfiles: `backend` as **api** (default CMD) and as
+**worker** (`arq app.worker.WorkerSettings` — daily close at 11:59pm ET, NPC
+refresh every 5 min), plus `frontend` (nginx serving the SPA and proxying
+`/api` + WebSockets). Attach Railway Postgres/Redis via `AGORA_DATABASE_URL` /
+`AGORA_REDIS_URL`; run `alembic revision --autogenerate -m initial && alembic
+upgrade head` once against the live database.
 
-Database migrations: `cd backend && AGORA_DATABASE_URL=... alembic revision --autogenerate -m initial && alembic upgrade head` (first migration is generated against a live database rather than hand-written).
+## Known v1 edges (documented, deliberate)
 
-## Deploy
-
-Three Railway services built from the two Dockerfiles (`backend` twice — the worker
-service overrides the command with `arq app.worker.WorkerSettings` — plus `frontend`),
-with Railway Postgres and Redis attached via `AGORA_DATABASE_URL` / `AGORA_REDIS_URL`.
+- LTI 1.3 is a fast-follow; the grade model is LTI-shaped (DECISIONS #2/§8).
+- WebSocket fanout is in-process; the `bus.publish` seam is where Redis pub/sub
+  lands when the API scales past one process.
+- Postgres row-level security is planned; tenancy is enforced in queries today.
+- Email delivery for magic links is a stub (dev returns the token; wire an
+  SMTP/provider sender for production).
+- Web-push notification keys/wiring (PWA manifest ships; subscription endpoint
+  is Phase-3.5 work).

@@ -1,6 +1,6 @@
 /* The market square, your shop, the workshop, and the docks. */
 import React, { useCallback, useEffect, useState } from "react";
-import { api, PlayerState } from "./api";
+import { api, getToken, PlayerState } from "./api";
 import { Asset, Coins, Confetti, GoodIcon, Sparkline } from "./ui";
 
 type Notify = (msg: string, error?: boolean) => void;
@@ -31,6 +31,20 @@ export function MarketSquare({ state, wid, notify, refresh }: {
     const id = setInterval(() => load().catch(() => {}), 8000);
     return () => clearInterval(id);
   }, [load]);
+
+  // Live feed: refresh instantly when anyone trades this good (DECISIONS #8).
+  useEffect(() => {
+    const proto = location.protocol === "https:" ? "wss" : "ws";
+    const sock = new WebSocket(
+      `${proto}://${location.host}/api/worlds/${wid}/ws?token=${getToken()}`);
+    sock.onmessage = (ev) => {
+      try {
+        const msg = JSON.parse(ev.data);
+        if (msg.type === "day_closed" || msg.good_id === good) load().catch(() => {});
+      } catch { /* ignore */ }
+    };
+    return () => sock.close();
+  }, [wid, good, load]);
 
   const ceiling = state.world.market_rules?.ceilings?.[good];
   const floor = state.world.market_rules?.floors?.[good];

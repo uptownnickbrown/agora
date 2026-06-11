@@ -5,6 +5,7 @@ import uuid
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
+from ..bus import bus
 from ..deps import DB, CurrentPlayer, WorldDep
 from ..services import market as market_svc
 
@@ -24,6 +25,8 @@ async def place_order(body: OrderIn, db: DB, world: WorldDep, player: CurrentPla
     result = await market_svc.place_order(
         db, world, player, body.good_id, body.side, body.qty, body.price, body.ttl_days
     )
+    for trade in result["trades"]:
+        bus.publish(str(world.id), {"type": "trade", **trade})
     return result
 
 
