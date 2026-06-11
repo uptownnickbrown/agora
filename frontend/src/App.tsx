@@ -280,9 +280,9 @@ function GameShell({ me, wid, notify, onLeave }: {
       <div className="col">
         <div className="topbar">
           <div className="banner">AGORA</div>
-          <span className="plaque">Instructor — gods don't trade</span>
+          <span className="plaque">Instructor console</span>
           <span style={{ marginLeft: "auto" }} />
-          <button className="quiet" onClick={onLeave}>worlds</button>
+          <button className="quiet" onClick={onLeave}>Worlds</button>
         </div>
         <InstructorScreen wid={wid} notify={notify} tab={itab} setTab={setItab} />
         {tour === "instructor" &&

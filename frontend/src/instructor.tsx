@@ -6,6 +6,12 @@ import { GoodIcon, Sparkline } from "./ui";
 type Notify = (msg: string, error?: boolean) => void;
 type Prefill = { kind: string; params: Record<string, any> } | null;
 
+/** "supply_shock" -> "Supply shock" */
+const titleize = (k: string) => {
+  const s = k.replace(/_/g, " ");
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
+
 export function InstructorScreen({ wid, notify, tab: tabProp, setTab: setTabProp }: {
   wid: string; notify: Notify;
   tab?: string; setTab?: (t: string) => void;  // optionally controlled (tour)
@@ -14,7 +20,9 @@ export function InstructorScreen({ wid, notify, tab: tabProp, setTab: setTabProp
   const tab = tabProp ?? tabState;
   const setTab = setTabProp ?? setTabState;
   const [prefill, setPrefill] = useState<Prefill>(null);
-  const tabs = ["dashboard", "feed", "interventions", "heatmap", "gradebook", "playbook"];
+  const tabs: [string, string][] = [
+    ["dashboard", "Dashboard"], ["feed", "Feed"], ["interventions", "Interventions"],
+    ["heatmap", "Mastery"], ["gradebook", "Gradebook"], ["playbook", "Playbook"]];
 
   function respond(kind: string, params: Record<string, any>) {
     setPrefill({ kind, params });
@@ -24,9 +32,9 @@ export function InstructorScreen({ wid, notify, tab: tabProp, setTab: setTabProp
   return (
     <div className="col">
       <div className="places">
-        {tabs.map((t) => (
+        {tabs.map(([t, label]) => (
           <div key={t} className={`place-tile ${tab === t ? "active" : ""}`}
-               onClick={() => setTab(t)} role="button">{t}</div>
+               onClick={() => setTab(t)} role="button">{label}</div>
         ))}
       </div>
       {tab === "dashboard" && <Dashboard wid={wid} notify={notify} />}
@@ -63,7 +71,7 @@ function Dashboard({ wid, notify }: { wid: string; notify: Notify }) {
     () => api.get(`/worlds/${wid}/instructor/dashboard`).then(setData).catch(() => {}),
     [wid]);
   useEffect(() => { load(); }, [load]);
-  if (!data) return <div className="panel">Loading the world…</div>;
+  if (!data) return <div className="panel">Loading…</div>;
 
   async function act(path: string, body?: any, msg = "Done.") {
     try { await api.post(path, body); notify(msg); await load(); }
@@ -79,28 +87,30 @@ function Dashboard({ wid, notify }: { wid: string; notify: Notify }) {
           <div className="row">
             <span className="plaque">Week {w.week}</span>
             <span className="plaque">Day {w.day}</span>
-            <span className="plaque">{w.state}</span>
+            <span className="plaque">{w.state.charAt(0).toUpperCase() + w.state.slice(1)}</span>
             <span className="plaque" style={{ cursor: "pointer" }}
-                  title="click to copy"
+                  title="Click to copy"
                   onClick={() => { navigator.clipboard?.writeText(w.join_code);
-                                   notify("Join code copied — paste it in your syllabus."); }}>
-              join code: <b>{w.join_code}</b> ⧉</span>
-            {w.smog > 0 && <span className="plaque">smog {w.smog}</span>}
+                                   notify("Join code copied."); }}>
+              Join code: <b>{w.join_code}</b> ⧉</span>
+            {w.smog > 0 && <span className="plaque">Smog {w.smog}</span>}
             <span className="plaque">🐟 {w.fish_stock}</span>
             {w.demo && <span className="plaque"
-              title="shared demo — lifecycle buttons are disabled; interventions work">
-              🧪 demo world</span>}
+              title="Shared demo world: lifecycle buttons are disabled; interventions work.">
+              🧪 Demo world</span>}
           </div>
           <div className="row" style={{ marginTop: 10 }}>
             <button onClick={() => act(`/worlds/${wid}/instructor/close-day`, undefined,
-                                       "The market bell rings — day closed.")}>
+                                       "Day closed.")}>
               Run daily close</button>
             <button className="wood" onClick={() =>
               act(`/worlds/${wid}/instructor/advance-week`, undefined, "Week advanced.")}>
               Advance week</button>
-            <button className="quiet" onClick={() =>
-              act(`/worlds/${wid}/instructor/state`, { state: "epilogue" },
-                  "The world enters its epilogue.")}>End world → epilogue</button>
+            <button className="quiet"
+              title="Moves the world to its epilogue: trading stops and students see their recaps."
+              onClick={() =>
+                act(`/worlds/${wid}/instructor/state`, { state: "epilogue" },
+                    "World moved to epilogue.")}>End world</button>
           </div>
           <div style={{ marginTop: 8 }}><RulesChips rules={w.market_rules} /></div>
         </div>
@@ -173,7 +183,7 @@ function Feed({ wid, onRespond }: {
   useEffect(() => {
     api.get(`/worlds/${wid}/instructor/feed`).then(setFeed).catch(() => {});
   }, [wid]);
-  if (!feed) return <div className="panel">Listening…</div>;
+  if (!feed) return <div className="panel">Loading…</div>;
 
   // Digest: collapse the daily drumbeat into one card per (kind, good).
   const groups = new Map<string, any[]>();
@@ -198,11 +208,11 @@ function Feed({ wid, onRespond }: {
       <div className="panel grow">
         <h3>Detected moments</h3>
         <div className="muted" style={{ marginBottom: 8 }}>
-          Repeated alerts are folded together — newest first. Each is a teachable
-          moment; some deserve a response.
+          Market events detected in your world, newest first. Repeated alerts are
+          grouped, and each can be answered with a one-click response.
         </div>
-        {cards.length === 0 && <div className="muted">Nothing yet. Give them time
-          — someone always corners something.</div>}
+        {cards.length === 0 && <div className="muted">No notable events yet.
+          As students trade, shortages, price spikes, and cartels will appear here.</div>}
         {cards.map((c) => (
           <div key={c.key} className={`moment-card ${c.sev}`}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -220,7 +230,7 @@ function Feed({ wid, onRespond }: {
                           const p = MOMENT_RESPONSES[c.kind](c.good);
                           if (p) onRespond(p.kind, p.params);
                         }}>
-                  ⚡ respond</button>
+                  Respond</button>
               )}
             </div>
             <div style={{ fontSize: 14, marginTop: 3 }}>{c.latest.summary}</div>
@@ -244,8 +254,8 @@ function Feed({ wid, onRespond }: {
       <div className="panel" style={{ flex: "0 1 340px" }}>
         <h3>Your interventions</h3>
         {feed.interventions.length === 0 &&
-          <div className="muted">None yet. The world runs itself until you reach
-            for a lever.</div>}
+          <div className="muted">None yet. The world runs on its own until you
+            choose to step in.</div>}
         {feed.interventions.map((i: any, idx: number) => (
           <div key={idx} className="crier-post">
             <div className="crier-kicker">day {i.day} · {i.kind}</div>
@@ -260,25 +270,25 @@ function Feed({ wid, onRespond }: {
 // Per-parameter form fields; anything unlisted falls back to the JSON editor.
 const PARAM_FIELDS: Record<string, { label: string; type: string; step?: number;
                                      def: any; hint?: string }> = {
-  good: { label: "good", type: "good", def: "grain" },
-  goods: { label: "goods", type: "goods", def: ["garments"] },
-  price: { label: "price (coppers)", type: "number", def: 60 },
-  per_unit: { label: "per unit (coppers)", type: "number", def: 8 },
-  days: { label: "days", type: "number", def: 3 },
-  price_mult: { label: "price multiplier", type: "number", step: 0.1, def: 1.5,
-                hint: ">1 = NPCs pay/charge more" },
-  qty_mult: { label: "quantity multiplier", type: "number", step: 0.1, def: 0.5,
-              hint: "<1 = scarcity, >1 = glut/boom" },
-  per_player_per_day: { label: "per merchant per day", type: "number", def: 3 },
-  closed: { label: "fishery closed?", type: "bool", def: true },
-  auction_id: { label: "auction id", type: "text", def: "glowdye-1" },
-  licenses: { label: "licenses for sale", type: "number", def: 4 },
-  close_day_offset: { label: "closes in (days)", type: "number", def: 2 },
-  amount: { label: "coppers per merchant", type: "number", def: 50 },
-  player_id: { label: "merchant", type: "player", def: "" },
-  "player_id?": { label: "merchant (optional)", type: "player", def: "" },
-  divest_fraction: { label: "divest fraction", type: "number", step: 0.1, def: 0.5 },
-  fine: { label: "fine (coppers)", type: "number", def: 100 },
+  good: { label: "Good", type: "good", def: "grain" },
+  goods: { label: "Goods", type: "goods", def: ["garments"] },
+  price: { label: "Price (coppers)", type: "number", def: 60 },
+  per_unit: { label: "Per unit (coppers)", type: "number", def: 8 },
+  days: { label: "Days", type: "number", def: 3 },
+  price_mult: { label: "Price multiplier", type: "number", step: 0.1, def: 1.5,
+                hint: "Above 1, NPCs pay and charge more." },
+  qty_mult: { label: "Quantity multiplier", type: "number", step: 0.1, def: 0.5,
+              hint: "Below 1 creates scarcity; above 1, a glut." },
+  per_player_per_day: { label: "Per merchant per day", type: "number", def: 3 },
+  closed: { label: "Fishery closed?", type: "bool", def: true },
+  auction_id: { label: "Auction ID", type: "text", def: "glowdye-1" },
+  licenses: { label: "Licenses for sale", type: "number", def: 4 },
+  close_day_offset: { label: "Closes in (days)", type: "number", def: 2 },
+  amount: { label: "Coppers per merchant", type: "number", def: 50 },
+  player_id: { label: "Merchant", type: "player", def: "" },
+  "player_id?": { label: "Merchant (optional)", type: "player", def: "" },
+  divest_fraction: { label: "Divest fraction", type: "number", step: 0.1, def: 0.5 },
+  fine: { label: "Fine (coppers)", type: "number", def: 100 },
 };
 
 function Interventions({ wid, notify, prefill }: {
@@ -390,7 +400,7 @@ function Interventions({ wid, notify, prefill }: {
           )}
           {spec.type === "player" && (
             <select value={val} onChange={(e) => set(e.target.value)}>
-              <option value="">— choose —</option>
+              <option value="">Choose…</option>
               {roster.map((r) => (
                 <option key={r.player_id} value={r.player_id}>{r.merchant}</option>
               ))}
@@ -414,15 +424,15 @@ function Interventions({ wid, notify, prefill }: {
                         color: k === kind ? "var(--parchment)" : undefined }}
                onClick={() => pick(k)}
                role="button">
-            <b>{k.replace(/_/g, " ")}</b>
+            <b>{titleize(k)}</b>
             <div style={{ fontSize: 12 }}>{v.blurb}</div>
           </div>
         ))}
       </div>
       <div className="panel grow">
-        <h3>⚡ {kind.replace(/_/g, " ")}</h3>
-        <div className="muted">Interventions are diegetic — students see the Crier's
-          fiction, never your hand.</div>
+        <h3>{titleize(kind)}</h3>
+        <div className="muted">Students experience interventions as in-world news
+          from the Town Crier. Your name never appears.</div>
         {!rawMode ? (
           <div className="form-grid">
             {(catalog[kind]?.params || []).map((p: string) => field(p))}
@@ -434,7 +444,7 @@ function Interventions({ wid, notify, prefill }: {
         <div className="row" style={{ alignItems: "center", marginTop: 10 }}>
           <button className="quiet" onClick={doPreview}>Preview impact</button>
           <button onClick={() => run(false)}>Execute now</button>
-          <label className="muted">or schedule for day
+          <label className="muted">or schedule for day:
             <input type="number" style={{ width: 64, marginLeft: 6 }}
                    value={scheduleDay}
                    onChange={(e) => setScheduleDay(
@@ -447,7 +457,7 @@ function Interventions({ wid, notify, prefill }: {
                     if (!rawMode) setRawText(JSON.stringify(effective(), null, 1));
                     setRawMode(!rawMode);
                   }}>
-            {rawMode ? "form" : "raw JSON"}</button>
+            {rawMode ? "Form" : "Raw JSON"}</button>
         </div>
         {preview && <div className="pip-bubble" style={{ marginTop: 10 }}>{preview}</div>}
       </div>
@@ -465,27 +475,52 @@ function Heatmap({ wid }: { wid: string }) {
     data.los.every((lo: any) => s.scores[lo.id] == null));
   const color = (pct: number | null) =>
     pct == null ? "#eee" : pct > 70 ? "var(--sage)" : pct > 40 ? "#ecc473" : "var(--terracotta)";
+  // "ch2-opportunity-cost" -> "Opportunity cost"
+  const loLabel = (id: string) => titleize(id.replace(/^ch\d+-/, "").replace(/-/g, "_"));
+  const legend = (
+    <div className="row" style={{ gap: 14, margin: "2px 0 10px", fontSize: 12 }}>
+      {[["var(--sage)", "Above 70%: mastered"],
+        ["#ecc473", "40–70%: developing"],
+        ["var(--terracotta)", "Below 40%: needs teaching"],
+        ["#eee", "Blank: not yet assessed"]].map(([bg, label]) => (
+        <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+          <span style={{ width: 12, height: 12, borderRadius: 3, background: bg,
+                         border: "1px solid rgba(0,0,0,0.12)" }} />
+          <span className="muted">{label}</span>
+        </span>
+      ))}
+    </div>
+  );
   return (
     <div className="panel" style={{ overflowX: "auto" }}>
       <h3>Mastery heatmap</h3>
-      {empty && (
-        <div className="pip-bubble" style={{ maxWidth: 560, marginBottom: 10 }}>
-          No tutor checks answered yet. Checks trigger as students play (and Pip
-          nudges them along) — expect the first cells to light up within a day
-          or two of real activity. Green = mastered, amber = shaky, red = teach it.
+      <div className="muted" style={{ marginBottom: 6 }}>
+        Each cell is one student's mastery of one learning objective, measured by
+        Pip's in-game tutor checks.
+      </div>
+      {legend}
+      {empty ? (
+        <div className="pip-bubble" style={{ maxWidth: 560 }}>
+          No tutor checks have been answered yet. Checks appear naturally as
+          students play, so expect the first results within a day or two of
+          class activity.
         </div>
-      )}
+      ) : (
       <table style={{ borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
           <tr>
-            <th style={{ textAlign: "left", padding: 4 }}>student</th>
+            <th style={{ textAlign: "left", padding: 4, verticalAlign: "bottom" }}>Student</th>
             {data.los.map((lo: any) => (
               <th key={lo.id} title={lo.text}
-                  style={{ padding: "4px 2px", writingMode: "vertical-rl",
-                           transform: "rotate(180deg)", height: 112,
-                           fontSize: 10, fontWeight: 500, textAlign: "left",
-                           whiteSpace: "nowrap" }}>
-                {lo.id}
+                  style={{ padding: "4px 2px", verticalAlign: "bottom",
+                           fontSize: 10, fontWeight: 500 }}>
+                <div style={{ writingMode: "vertical-rl",
+                              transform: "rotate(180deg)",
+                              height: 130, overflow: "hidden",
+                              textOverflow: "ellipsis", whiteSpace: "nowrap",
+                              margin: "0 auto" }}>
+                  {loLabel(lo.id)}
+                </div>
               </th>
             ))}
           </tr>
@@ -509,6 +544,7 @@ function Heatmap({ wid }: { wid: string }) {
           ))}
         </tbody>
       </table>
+      )}
     </div>
   );
 }
@@ -522,17 +558,18 @@ function Gradebook({ wid }: { wid: string }) {
   return (
     <div className="panel">
       <h3>Gradebook</h3>
-      <div className="muted">Participation + mastery, never wealth.
+      <div className="muted">Grades combine participation and concept mastery.
+        In-game wealth is never graded.
         {" "}<a href={`/api/worlds/${wid}/instructor/gradebook.csv`}>Export CSV</a></div>
       {noMastery && (
         <div className="pip-bubble" style={{ maxWidth: 560, margin: "8px 0" }}>
-          Mastery is 0% across the board because no tutor checks have been
-          answered yet — grades here are participation-only for now.
+          No tutor checks have been answered yet, so mastery is 0% and grades
+          currently reflect participation only.
         </div>
       )}
       <table className="book" style={{ marginTop: 8 }}>
-        <thead><tr><th style={{ textAlign: "left" }}>merchant</th><th>participation</th>
-          <th>mastery</th><th>grade</th><th>LOs</th></tr></thead>
+        <thead><tr><th style={{ textAlign: "left" }}>Student</th><th>Participation</th>
+          <th>Mastery</th><th>Grade</th><th>Objectives</th></tr></thead>
         <tbody>
           {rows.map((r) => (
             <tr key={r.merchant}>
@@ -611,11 +648,12 @@ function Playbook({ wid }: { wid: string }) {
     <div className="panel">
       <h3>Lecture playbook</h3>
       <div className="muted" style={{ marginBottom: 6 }}>
-        Monday-morning prep from YOUR class's data: what happened, what to teach,
-        what to ask. Generated in under a minute.
+        A lecture-prep brief built from your class's market data: what happened,
+        which concepts need attention, and discussion questions tied to real
+        student decisions.
       </div>
       <div className="row" style={{ alignItems: "center" }}>
-        <label>week <input type="number" min={1} max={7} style={{ width: 56 }}
+        <label>Week <input type="number" min={1} max={7} style={{ width: 56 }}
                            value={week}
                            onChange={(e) => setWeek(
                              e.target.value === "" ? "" : +e.target.value)} /></label>
@@ -623,7 +661,7 @@ function Playbook({ wid }: { wid: string }) {
           {busy ? "Writing…" : "Generate"}</button>
         {pb && <button className="quiet" onClick={() => {
           navigator.clipboard?.writeText(pb.markdown);
-        }}>copy markdown</button>}
+        }}>Copy Markdown</button>}
       </div>
       {pb && (
         <div style={{ background: "#fffdf6", padding: "8px 18px 14px",
