@@ -2,6 +2,7 @@
 
 Production lives at **https://frontend-production-1bbf.up.railway.app**
 (Railway project `agora`, environment `production`, workspace "Nick Brown's Projects").
+Push-to-deploy last verified end-to-end: 2026-06-11.
 
 ## TL;DR — shipping a change
 
