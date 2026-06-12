@@ -3,6 +3,10 @@ x-backend-env: &backend-env
   AGORA_REDIS_URL: redis://redis:6379/0
   # From repo-root .env (compose interpolates it automatically); empty = canned tutor.
   AGORA_ANTHROPIC_API_KEY: ${AGORA_ANTHROPIC_API_KEY:-}
+  # Email transport (from .env); console = log-only dev mode.
+  AGORA_EMAIL_PROVIDER: ${AGORA_EMAIL_PROVIDER:-console}
+  AGORA_RESEND_API_KEY: ${AGORA_RESEND_API_KEY:-}
+  AGORA_EMAIL_FROM: ${AGORA_EMAIL_FROM:-Agora <onboarding@resend.dev>}
 
 services:
   postgres:

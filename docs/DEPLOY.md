@@ -89,6 +89,25 @@ an occasional cleanup. A nightly cron for this is a known TODO.
 `demo_enabled=true` must be set on the api service for `/demo/*` endpoints to
 work outside dev.
 
+## Email (Monday Brief digests + magic links)
+
+Both **api and worker** carry the email variables (worker sends the weekly
+digests; api sends magic links and manual digest sends):
+
+- `AGORA_EMAIL_PROVIDER=resend` (default `console` = compose + log only)
+- `AGORA_RESEND_API_KEY` (set 2026-06-12 via CLI on both services)
+- `AGORA_EMAIL_FROM` — currently `Agora <onboarding@resend.dev>`, Resend's
+  sandbox sender. **Sandbox limitation: it only delivers to the Resend
+  account owner's own email.** Before real instructors get digests, verify a
+  sending domain at https://resend.com/domains and update this variable on
+  both services.
+- `AGORA_APP_BASE_URL=https://frontend-production-1bbf.up.railway.app` —
+  used for links inside emails.
+
+Failed sends are recorded in the `email_log` table (`status=failed`) and the
+digest sweep retries on its next cron pass, so a bad sender config never
+silently drops a week.
+
 ## Gotchas (learned the hard way)
 
 - **Auto-deploy requires the Railway GitHub App.** Railway can build a
