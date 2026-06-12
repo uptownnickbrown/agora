@@ -12,6 +12,11 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # Behind Railway's TLS proxy, nginx's default absolute redirects leak the
+    # internal scheme/port (http://host:8080/landing/), which the edge doesn't
+    # serve. Relative redirects survive any proxy.
+    absolute_redirect off;
+
     location /api/ {
         # Re-resolve the upstream per request: a static proxy_pass caches the
         # api's IP at startup and serves 502s after every api redeploy.
