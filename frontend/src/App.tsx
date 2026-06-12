@@ -67,20 +67,30 @@ export default function App() {
     });
   }, [loadMe]);
 
-  // One-click demo entry from the landing page: /?demo=student|instructor
+  // One-click demo entry from the landing page: /?demo=student|instructor.
+  // An explicit demo link always wins — visitors hop between the student and
+  // instructor demos, and localStorage is shared across tabs, so an existing
+  // session must not swallow the click. Reload boots clean on the new token.
   useEffect(() => {
     const demo = new URLSearchParams(location.search).get("demo");
-    if (!demo || getToken()) return;
+    if (!demo) return;
     const role = demo === "instructor" ? "instructor" : "student";
     api.post(`/demo/${role}`).then((out) => {
       setToken(out.token);
       localStorage.setItem("agora_tour", out.role);
       history.replaceState(null, "", `/#/${out.world_id}`);
-      loadMe();
-    }).catch(() => { history.replaceState(null, "", "/"); });
-  }, [loadMe]);
+      location.reload();
+    }).catch(() => {
+      // Strip ?demo= so the reload can't loop, then boot normally.
+      history.replaceState(null, "", "/");
+      location.reload();
+    });
+  }, []);
 
   if (!authChecked) return null;
+  // Hold the blank frame while a demo session is being minted — rendering the
+  // previous session for a beat and then swapping roles reads as a glitch.
+  if (new URLSearchParams(location.search).get("demo")) return null;
 
   // NOTE: the smog filter must NOT wrap fixed-position chrome (Pip, toasts,
   // the tour) — a CSS filter turns its element into the containing block for
