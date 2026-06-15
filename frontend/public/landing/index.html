@@ -496,6 +496,66 @@
   .faq details p { margin: 10px 0 2px 32px; color: var(--ink-soft);
                    font-size: 14.5px; }
 
+  /* ---- Monday Brief email mockup ---- */
+  .email-mock {
+    max-width: 780px; margin: 0 auto;
+    background: #fffdf6;
+    border: 1px solid var(--parchment-edge);
+    border-radius: var(--radius);
+    box-shadow: 0 3px 0 var(--parchment-edge), 0 10px 24px var(--shadow);
+    overflow: hidden;
+    text-align: left;
+  }
+  .email-mock .em-head {
+    background: var(--parchment-dark);
+    border-bottom: 1px solid var(--parchment-edge);
+    padding: 14px 24px;
+    font-size: 13px; color: var(--ink-soft);
+  }
+  .email-mock .em-head .subj {
+    font-family: var(--font-display); font-weight: 600;
+    font-size: 18px; color: var(--ink); margin-top: 3px;
+  }
+  .email-mock .em-body { padding: 22px 24px 24px; font-size: 14.5px; }
+  .email-mock .em-sec {
+    font-size: 11.5px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--terracotta-dark); font-family: var(--font-display);
+    margin: 18px 0 6px;
+  }
+  .email-mock .em-sec:first-child { margin-top: 0; }
+  .email-mock ul { margin: 0 0 0 18px; }
+  .email-mock li { margin-bottom: 6px; color: var(--ink-soft); }
+  .email-mock li strong { color: var(--ink); }
+  .email-mock .em-attach {
+    display: inline-flex; align-items: center; gap: 9px;
+    border: 1px dashed var(--wood); border-radius: 8px;
+    background: var(--parchment);
+    padding: 8px 14px; margin-top: 16px;
+    font-size: 13px; color: var(--ink);
+  }
+  .email-mock .em-csv {
+    font-family: var(--font-display);
+    background: var(--sage-dark); color: #fff;
+    border-radius: 4px; padding: 1px 8px;
+    font-size: 11px; letter-spacing: 0.06em;
+  }
+  .email-mock .em-foot {
+    border-top: 1px dashed var(--parchment-edge);
+    margin-top: 18px; padding-top: 12px;
+    font-size: 12.5px; color: var(--ink-soft); font-style: italic;
+  }
+
+  /* ---- OpenStax table expander ---- */
+  .ostoggle {
+    display: block; margin: 12px auto 0;
+    background: none; border: none; cursor: pointer;
+    font-family: var(--font-display); font-size: 14px;
+    color: var(--terracotta-dark);
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+  .ostoggle:hover { color: var(--terracotta); }
+  table.ostable.collapsed tr.aux { display: none; }
+
   @media (max-width: 860px) {
     .os-flex { flex-direction: column; align-items: center; }
   }
@@ -529,15 +589,40 @@
     <p class="sub">Agora is a multiplayer market-town simulation that replaces the textbook-and-problem-set experience in introductory microeconomics. Prices come from your students' actual order flow. Shortages, monopolies, and collapsing commons happen because they made them happen. You formalize in lecture what they just lived.</p>
     <div class="cta-row">
       <a class="btn" href="mailto:pilots@agoraecon.org?subject=Pilot%20section%20request">Request a pilot section</a>
-      <a class="btn quiet" href="/?demo=student">Play as a student</a>
+      <a class="btn quiet" href="/?demo=student">Try the student demo</a>
       <a class="btn quiet" href="/?demo=instructor">Tour the instructor side</a>
     </div>
-    <p class="reassure">Pairs with the free OpenStax <em>Principles of Microeconomics 3e</em>. No cost to students in the pilot. No real money, ever.</p>
+    <p class="reassure">Demos open instantly in your browser — two minutes, no account. Pairs with the free OpenStax <em>Principles of Microeconomics 3e</em>. $0 for students in the pilot. Under 30 minutes a week of your time.</p>
   </div>
   <div class="hero-art">
     <img src="/assets/brand/agora_hero.png" alt="The Agora: a bustling illustrated market town at golden hour" width="1600" height="600">
   </div>
 </header>
+
+<!-- ================= SEE IT LIVE ================= -->
+<section id="live">
+  <div class="shell">
+    <div class="section-head reveal">
+      <span class="kicker">See it live</span>
+      <h2>This is what class looks like</h2>
+      <p>These are real screens from a running section: a live order book with the drought
+         still on the chart, and the instructor dashboard reading the same world.</p>
+    </div>
+    <div class="shots reveal">
+      <div>
+        <div class="browser-frame"><div class="bar"><i></i><i></i><i></i></div>
+          <img src="/assets/marketing/shot_market.png" alt="The Market Square: live order book, price chart with the drought spike, the trade tape" width="1440" height="940"></div>
+        <div class="shot-cap">A student's Market Square, with the Bread Decree's shortage right there on the chart.</div>
+      </div>
+      <div>
+        <div class="browser-frame"><div class="bar"><i></i><i></i><i></i></div>
+          <img src="/assets/marketing/shot_dashboard.png" alt="The instructor dashboard: vitals, price charts for every good, the roster" width="1440" height="940"></div>
+        <div class="shot-cap">Your dashboard, where the vitals, every market, and every student fit in one glance.</div>
+      </div>
+    </div>
+    <p class="shot-cap reveal" style="margin-top:24px;">Or drive it yourself: <a href="/?demo=student" style="color:var(--gold);">open the student demo</a> — two minutes, no account.</p>
+  </div>
+</section>
 
 <!-- ================= PILLARS ================= -->
 <section id="pillars">
@@ -744,23 +829,26 @@
               <tr><th style="width:52%">OpenStax chapter</th><th>Lived in the game as…</th></tr>
             </thead>
             <tbody>
-              <tr><td>1. Welcome to Economics</td><td><span class="wkpill soft">Onboarding</span><span class="mech">arriving in the Agora with a wagonload and a specialty</span></td></tr>
+              <tr class="aux"><td>1. Welcome to Economics</td><td><span class="wkpill soft">Onboarding</span><span class="mech">arriving in the Agora with a wagonload and a specialty</span></td></tr>
               <tr class="core"><td>2. Choice in a World of Scarcity</td><td><span class="wkpill">Week 1</span><span class="mech">a daily effort budget and the Traveling Merchant's cargo hold</span></td></tr>
               <tr class="core"><td>3. Demand and Supply</td><td><span class="wkpill">Week 2</span><span class="mech">the Festival Rush: demand spikes, prices answer, supply chases</span></td></tr>
-              <tr><td>4. Labor and Financial Markets</td><td><span class="wkpill soft">Week 4</span><span class="mech">hiring workers at a wage (partial coverage)</span></td></tr>
+              <tr class="aux"><td>4. Labor and Financial Markets</td><td><span class="wkpill soft">Week 4</span><span class="mech">hiring workers at a wage (partial coverage)</span></td></tr>
               <tr class="core"><td>5. Elasticity</td><td><span class="wkpill">Week 3</span><span class="mech">medicine stays expensive but available; tapestries crater</span></td></tr>
-              <tr><td>6. Consumer Choices</td><td><span class="wkpill soft">Weeks 1–3</span><span class="mech">woven through every budget decision</span></td></tr>
+              <tr class="aux"><td>6. Consumer Choices</td><td><span class="wkpill soft">Weeks 1–3</span><span class="mech">woven through every budget decision</span></td></tr>
               <tr class="core"><td>7. Production, Costs &amp; Industry Structure</td><td><span class="wkpill">Week 4</span><span class="mech">the Charter Choice: factory fixed costs vs. artisan margins</span></td></tr>
               <tr class="core"><td>8. Perfect Competition</td><td><span class="wkpill">Week 5</span><span class="mech">thick order-book markets where no one sets the price</span></td></tr>
               <tr class="core"><td>9. Monopoly</td><td><span class="wkpill">Week 5</span><span class="mech">glowdye licenses: a Crown auction mints real monopolists</span></td></tr>
               <tr class="core"><td>10. Monopolistic Competition &amp; Oligopoly</td><td><span class="wkpill">Week 7</span><span class="mech">Market Wars: cartels form, hold their breath, and crack</span></td></tr>
-              <tr><td>11. Monopoly &amp; Antitrust Policy</td><td><span class="wkpill soft">Week 7</span><span class="mech">your one-click antitrust suit, reported by the Crier</span></td></tr>
+              <tr class="aux"><td>11. Monopoly &amp; Antitrust Policy</td><td><span class="wkpill soft">Week 7</span><span class="mech">your one-click antitrust suit, reported by the Crier</span></td></tr>
               <tr class="core"><td>12. Environmental Protection &amp; Externalities</td><td><span class="wkpill">Week 6</span><span class="mech">smog literally desaturates the town's art until taxed</span></td></tr>
-              <tr><td>13. Positive Externalities &amp; Public Goods</td><td><span class="wkpill soft">Week 6</span><span class="mech">the fishery commons collapses, then quotas bring it back</span></td></tr>
+              <tr class="aux"><td>13. Positive Externalities &amp; Public Goods</td><td><span class="wkpill soft">Week 6</span><span class="mech">the fishery commons collapses, then quotas bring it back</span></td></tr>
               <tr><td>14–20</td><td><span class="wkpill none">Yours</span><span class="mech">taught conventionally; Agora stays out of the way</span></td></tr>
             </tbody>
           </table>
         </div>
+        <button id="ostoggle" type="button" class="ostoggle" hidden
+                data-show="Show the partial-coverage chapters (1, 4, 6, 11, 13)"
+                data-hide="Hide the partial-coverage chapters">Show the partial-coverage chapters (1, 4, 6, 11, 13)</button>
       </div>
     </div>
   </div>
@@ -828,28 +916,39 @@
         </div>
       </div>
     </div>
-  </div>
-</section>
 
-<!-- ================= SEE IT LIVE ================= -->
-<section id="live">
-  <div class="shell">
-    <div class="section-head reveal">
-      <span class="kicker">See it live</span>
-      <h2>This is what class looks like</h2>
-      <p>These are real screens from a running section: a live order book with the drought
-         still on the chart, and the instructor dashboard reading the same world.</p>
+    <div class="section-head reveal" style="margin-top:70px; margin-bottom:28px;">
+      <span class="kicker">Show, don't tell</span>
+      <h2>Monday morning, this is in your inbox</h2>
+      <p>What a Week 3 Brief looks like — assembled automatically from your section's world, discussion questions ready to paste into your slides.</p>
     </div>
-    <div class="shots reveal">
-      <div>
-        <div class="browser-frame"><div class="bar"><i></i><i></i><i></i></div>
-          <img src="/assets/marketing/shot_market.png" alt="The Market Square: live order book, price chart with the drought spike, the trade tape" width="1440" height="940" loading="lazy"></div>
-        <div class="shot-cap">A student's Market Square, with the Bread Decree's shortage right there on the chart.</div>
+    <div class="email-mock reveal">
+      <div class="em-head">
+        From: <strong>Agora</strong> &lt;brief@agoraecon.org&gt; &nbsp;·&nbsp; Mon 7:02 AM
+        <div class="subj">Monday Brief, Week 3 — the drought hit, and the Decree backfired on schedule</div>
       </div>
-      <div>
-        <div class="browser-frame"><div class="bar"><i></i><i></i><i></i></div>
-          <img src="/assets/marketing/shot_dashboard.png" alt="The instructor dashboard: vitals, price charts for every good, the roster" width="1440" height="940" loading="lazy"></div>
-        <div class="shot-cap">Your dashboard, where the vitals, every market, and every student fit in one glance.</div>
+      <div class="em-body">
+        <div class="em-sec">What happened in your economy</div>
+        <ul>
+          <li><strong>Bread traded up 142%</strong> after Tuesday's drought, then Wednesday's price ceiling emptied the shelves by nightfall.</li>
+          <li><strong>A gray market opened Thursday:</strong> 11 bread trades cleared above the cap. The price chart is attached.</li>
+          <li><strong>Elasticity, in the wild:</strong> medicine stayed expensive but available; tapestries cratered.</li>
+        </ul>
+        <div class="em-sec">Discussion questions for Monday — copy-paste ready</div>
+        <ul>
+          <li>"Mara N. sold her entire bread stock forty minutes before the Decree took effect. Lucky timing — or did the announcement itself carry information?"</li>
+          <li>"Shelves were empty, but the gray-market price kept climbing. Which number was the real price of bread this week — the legal one or the alley one?"</li>
+        </ul>
+        <div class="em-sec">The tutor noticed</div>
+        <ul>
+          <li>14 students described the post-drought spike as "more demand." <em>Shift vs. movement along the curve</em> could use fifteen minutes of lecture.</li>
+        </ul>
+        <div class="em-sec">Worth a nudge</div>
+        <ul>
+          <li>3 students haven't logged in since Tuesday — names and one-click nudges are on your dashboard.</li>
+        </ul>
+        <span class="em-attach"><span class="em-csv">CSV</span> gradebook_week3.csv — imports into Canvas, Moodle, or Blackboard</span>
+        <div class="em-foot">Assembled automatically from your section's data. Reply to this email and a human answers.</div>
       </div>
     </div>
   </div>
@@ -998,6 +1097,39 @@
   </div>
 </section>
 
+<!-- ================= TRUST STRIP ================= -->
+<section id="trust" style="padding-bottom:10px;">
+  <div class="shell">
+    <div class="trust reveal">
+      <div class="trust-item">
+        <img class="ti-glyph" src="/assets/ui/icon_book.png" alt="" width="28" height="28" loading="lazy">
+        <h4>Pairs with OpenStax</h4>
+        <p><em>Principles of Microeconomics 3e</em> (CC BY). The textbook stays free; Agora replaces the reading homework for covered weeks.</p>
+      </div>
+      <div class="trust-item">
+        <img class="ti-glyph" src="/assets/ui/icon_shield.png" alt="" width="28" height="28" loading="lazy">
+        <h4>FERPA-minded</h4>
+        <p>Student data handled for instruction only. Students never see each other's grades or mastery; instructors never see another section's world.</p>
+      </div>
+      <div class="trust-item">
+        <img class="ti-glyph" src="/assets/ui/coin.png" alt="" width="28" height="28" loading="lazy">
+        <h4>No real money, ever</h4>
+        <p>One in-game currency, coppers, with equal starting endowments. No purchases, no microtransactions, nothing to monetize students.</p>
+      </div>
+      <div class="trust-item">
+        <img class="ti-glyph" src="/assets/ui/icon_globe.png" alt="" width="28" height="28" loading="lazy">
+        <h4>Runs anywhere</h4>
+        <p>Any modern browser, phone-friendly, no app store, no installs. Built for the distracted freshman on a phone in the back row.</p>
+      </div>
+      <div class="trust-item">
+        <img class="ti-glyph" src="/assets/recap/laurel.png" alt="" width="28" height="28" loading="lazy">
+        <h4>Gradebook-ready</h4>
+        <p>Configurable weights, with the gradebook emailed weekly and exportable as CSV that imports straight into Canvas, Moodle, or Blackboard.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ================= ENDORSEMENTS ================= -->
 <section id="endorsements">
   <div class="shell">
@@ -1034,39 +1166,6 @@
   </div>
 </section>
 
-<!-- ================= TRUST STRIP ================= -->
-<section id="trust" style="padding-bottom:10px;">
-  <div class="shell">
-    <div class="trust reveal">
-      <div class="trust-item">
-        <img class="ti-glyph" src="/assets/ui/icon_book.png" alt="" width="28" height="28" loading="lazy">
-        <h4>Pairs with OpenStax</h4>
-        <p><em>Principles of Microeconomics 3e</em> (CC BY). The textbook stays free; Agora replaces the reading homework for covered weeks.</p>
-      </div>
-      <div class="trust-item">
-        <img class="ti-glyph" src="/assets/ui/icon_shield.png" alt="" width="28" height="28" loading="lazy">
-        <h4>FERPA-minded</h4>
-        <p>Student data handled for instruction only. Students never see each other's grades or mastery; instructors never see another section's world.</p>
-      </div>
-      <div class="trust-item">
-        <img class="ti-glyph" src="/assets/ui/coin.png" alt="" width="28" height="28" loading="lazy">
-        <h4>No real money, ever</h4>
-        <p>One in-game currency, coppers, with equal starting endowments. No purchases, no microtransactions, nothing to monetize students.</p>
-      </div>
-      <div class="trust-item">
-        <img class="ti-glyph" src="/assets/ui/icon_globe.png" alt="" width="28" height="28" loading="lazy">
-        <h4>Runs anywhere</h4>
-        <p>Any modern browser, phone-friendly, no app store, no installs. Built for the distracted freshman on a phone in the back row.</p>
-      </div>
-      <div class="trust-item">
-        <img class="ti-glyph" src="/assets/recap/laurel.png" alt="" width="28" height="28" loading="lazy">
-        <h4>Gradebook-ready</h4>
-        <p>Configurable weights, with the gradebook emailed weekly and exportable as CSV that imports straight into Canvas, Moodle, or Blackboard.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ================= FINAL CTA ================= -->
 <section class="final-cta">
   <div class="shell reveal">
@@ -1075,10 +1174,10 @@
     <p>Pilot sections are free, include onboarding for you and your students, and come with the full instructor dashboard, playbooks, and gradebook. Bring 20–80 students; we'll bring the town.</p>
     <div class="cta-row">
       <a class="btn" href="mailto:pilots@agoraecon.org?subject=Pilot%20section%20request">Request a pilot section</a>
-      <a class="btn quiet" href="/?demo=student">Play as a student</a>
+      <a class="btn quiet" href="/?demo=student">Try the student demo</a>
       <a class="btn quiet" href="/?demo=instructor">Tour the instructor side</a>
     </div>
-    <p class="reassure">No cost to students in the pilot · pairs with the free OpenStax text · under 30 minutes a week of your time</p>
+    <p class="reassure">Demos are instant, no account needed · no cost to students in the pilot · pairs with the free OpenStax text · under 30 minutes a week of your time</p>
   </div>
 </section>
 
@@ -1100,6 +1199,19 @@
   (function () {
     // Current year in the footer.
     document.getElementById('yr').textContent = new Date().getFullYear();
+
+    // OpenStax map: tuck the partial-coverage rows behind a toggle. Without
+    // JS the button stays hidden and the full table shows.
+    var osTable = document.querySelector('table.ostable');
+    var osBtn = document.getElementById('ostoggle');
+    if (osTable && osBtn) {
+      osTable.classList.add('collapsed');
+      osBtn.hidden = false;
+      osBtn.addEventListener('click', function () {
+        var collapsed = osTable.classList.toggle('collapsed');
+        osBtn.textContent = collapsed ? osBtn.dataset.show : osBtn.dataset.hide;
+      });
+    }
 
     // Gentle reveal-on-scroll, skipped if the user prefers reduced motion
     // or the browser lacks IntersectionObserver.
