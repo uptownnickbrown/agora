@@ -473,3 +473,29 @@ async def test_playbook_and_recap(game):
     r = await client.get(f"/worlds/{wid}/recap", headers=hdr(alice["token"]))
     recap = r.json()
     assert recap["merchant"] == "Student 0" and "chapters" in recap
+
+
+async def test_puzzle_ignores_legacy_number_guesses(game):
+    """Rows written by the retired price-guessing game (ints) must not break
+    the Connections view if a deploy lands mid-day."""
+    import uuid as _uuid
+
+    from app.models import PuzzleAttempt, World
+
+    client, wid = game["client"], game["world_id"]
+    alice = game["students"][0]
+    async with game["session_factory"]() as db:
+        async with db.begin():
+            world = await db.get(World, _uuid.UUID(wid))
+            db.add(PuzzleAttempt(world_id=world.id,
+                                 player_id=_uuid.UUID(alice["player_id"]),
+                                 world_day=world.world_day,
+                                 guesses=[54, 62, 71]))
+    r = await client.get(f"/worlds/{wid}/puzzle", headers=hdr(alice["token"]))
+    assert r.status_code == 200, r.text
+    p = r.json()
+    assert p["mistakes_left"] == 4 and p["found"] == [] and not p["finished"]
+    key = await _todays_puzzle(game)
+    r = await client.post(f"/worlds/{wid}/puzzle/guess", headers=hdr(alice["token"]),
+                          json={"terms": key["groups"][0]["terms"]})
+    assert r.status_code == 200 and r.json()["result"] == "correct"

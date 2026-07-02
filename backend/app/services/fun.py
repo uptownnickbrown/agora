@@ -57,7 +57,10 @@ def _match_group(groups: list[dict], guess: list[str]) -> dict | None:
 
 
 def _puzzle_view(p: dict, attempt: PuzzleAttempt | None) -> dict:
-    guesses: list[list[str]] = list(attempt.guesses) if attempt else []
+    # Ignore rows from the retired number-guessing game (ints, not term lists)
+    # so a mid-day deploy can't strand anyone who already played.
+    guesses: list[list[str]] = [g for g in (attempt.guesses if attempt else [])
+                                if isinstance(g, list)]
     found = [g for g in (_match_group(p["groups"], guess) for guess in guesses) if g]
     mistakes = len(guesses) - len(found)
     tier_of = {t.lower(): g["tier"] for g in p["groups"] for t in g["terms"]}
@@ -131,7 +134,8 @@ async def guess_puzzle(db: AsyncSession, world: World, player: Player,
     found_terms = {t.lower() for g in view["found"] for t in g["terms"]}
     if gset & found_terms:
         raise GameError("some of those are already solved")
-    if any({t.lower() for t in old} == gset for old in attempt.guesses):
+    if any(isinstance(old, list) and {t.lower() for t in old} == gset
+           for old in attempt.guesses):
         return {"result": "already_guessed", "mistakes_left": view["mistakes_left"],
                 "solved": False, "finished": False, "effort_gained": 0}
 
