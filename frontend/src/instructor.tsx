@@ -657,11 +657,15 @@ function Markdown({ text }: { text: string }) {
 
 function MondayBrief({ wid }: { wid: string }) {
   const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [demo, setDemo] = useState(false);
   const [sending, setSending] = useState(false);
   const [sentTo, setSentTo] = useState("");
+  const [previewing, setPreviewing] = useState(false);
+  const [preview, setPreview] = useState<any>(null);
   useEffect(() => {
     api.get(`/worlds/${wid}/instructor/digest/settings`)
-      .then((out) => setEnabled(out.enabled)).catch(() => setEnabled(true));
+      .then((out) => { setEnabled(out.enabled); setDemo(!!out.demo); })
+      .catch(() => setEnabled(true));
   }, [wid]);
   async function toggle() {
     const next = !enabled;
@@ -678,24 +682,54 @@ function MondayBrief({ wid }: { wid: string }) {
     } catch { /* noop */ }
     setSending(false);
   }
+  async function loadPreview() {
+    setPreviewing(true);
+    try {
+      setPreview(await api.get(`/worlds/${wid}/instructor/digest/preview`));
+    } catch { /* noop */ }
+    setPreviewing(false);
+  }
   return (
     <div className="panel">
       <h3>Monday Brief</h3>
       <div className="muted" style={{ marginBottom: 8 }}>
-        Each week, this playbook is emailed to you automatically, along with a
-        class summary, students who may need a nudge, and the gradebook as a
-        CSV attachment. No login required.
+        Each Monday this playbook lands in your inbox with the sixty-second
+        version on top: the week's biggest market story, class mastery, the
+        concepts that need lecture time, students who may need a nudge, and
+        the gradebook attached as CSV. No login required.
       </div>
       <div className="row" style={{ alignItems: "center" }}>
-        <label style={{ display: "inline-flex", alignItems: "center", gap: 6,
-                        cursor: "pointer" }}>
-          <input type="checkbox" checked={enabled ?? true} onChange={toggle} />
-          Email me the brief each week
-        </label>
-        <button className="quiet" onClick={sendNow} disabled={sending}>
-          {sending ? "Sending…" : "Email me this week's brief now"}</button>
-        {sentTo && <span className="muted">Sent to {sentTo}.</span>}
+        <button onClick={loadPreview} disabled={previewing}>
+          {previewing ? "Assembling from your class's week… (about half a minute)"
+            : preview ? "Rebuild the preview" : "Preview this week's brief"}</button>
+        {!demo && <>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: 6,
+                          cursor: "pointer" }}>
+            <input type="checkbox" checked={enabled ?? true} onChange={toggle} />
+            Email me the brief each week
+          </label>
+          <button className="quiet" onClick={sendNow} disabled={sending}>
+            {sending ? "Sending…" : "Email me this week's brief now"}</button>
+          {sentTo && <span className="muted">Sent to {sentTo}.</span>}
+        </>}
+        {demo && <span className="muted">
+          In your own course this arrives by email every Monday, gradebook
+          attached — the demo world just previews it.</span>}
       </div>
+      {preview && (
+        <div style={{ marginTop: 12 }}>
+          <div className="muted" style={{ fontSize: 12.5, marginBottom: 6 }}>
+            Subject: <b>{preview.subject}</b>
+            {preview.attachments?.length > 0 &&
+              <> · attachment: {preview.attachments.join(", ")}</>}
+          </div>
+          <iframe title="Monday Brief preview" srcDoc={preview.html}
+                  sandbox=""
+                  style={{ width: "100%", height: 560, border:
+                           "1px solid var(--parchment-edge)", borderRadius: 12,
+                           background: "#efe9d8" }} />
+        </div>
+      )}
     </div>
   );
 }

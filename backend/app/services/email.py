@@ -104,6 +104,33 @@ def _inline(s: str) -> str:
     return s
 
 
+def brief_shell(course_title: str, week: int, inner_html: str, cta_url: str) -> str:
+    """The Monday Brief's dress clothes: a dark-green masthead, a parchment
+    body, and one gold button. Inline styles only — email clients eat CSS."""
+    return f"""\
+<div style="background:#efe9d8;padding:24px 12px;font-family:Georgia,'Times New Roman',serif;">
+  <div style="max-width:660px;margin:0 auto;background:#fffdf6;border:1px solid #d9cba8;border-radius:14px;overflow:hidden;">
+    <div style="background:#1c2f26;color:#f6efdd;padding:18px 26px;">
+      <div style="font-size:12px;letter-spacing:0.22em;text-transform:uppercase;opacity:0.85;">Agora &middot; The Monday Brief</div>
+      <div style="font-size:20px;font-weight:700;margin-top:3px;">{course_title} &mdash; Week {week} in review</div>
+    </div>
+    <div style="padding:22px 26px;color:#2b2b25;font-size:15px;line-height:1.55;">
+      {inner_html}
+      <table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px auto 6px;"><tr>
+        <td style="background:#d9a93f;border-radius:10px;">
+          <a href="{cta_url}" style="display:inline-block;padding:11px 26px;color:#2b2417;font-weight:700;text-decoration:none;font-family:Georgia,serif;">Open the instructor dashboard</a>
+        </td>
+      </tr></table>
+    </div>
+    <div style="padding:14px 26px 18px;border-top:1px solid #efe5cc;color:#6b5d49;font-size:12.5px;">
+      Assembled automatically from your section's own market data.
+      The gradebook is attached as CSV. You can toggle this email on the
+      dashboard's Playbook tab &mdash; and if you reply, a human answers.
+    </div>
+  </div>
+</div>"""
+
+
 def markdown_to_html(md: str) -> str:
     """Small renderer for our own playbook/digest markdown: #/##/### headings,
     -/1. lists, bold/italic, paragraphs. Mirrors the frontend's tiny renderer."""

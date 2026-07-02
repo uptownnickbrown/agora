@@ -247,7 +247,9 @@ async def digest_preview(db: DB, world: WorldDep, instructor: Instructor,
     from ..services.digest import build_digest
 
     msg = await build_digest(db, world, _digest_week(world, week))
-    return {"subject": msg.subject, "markdown": msg.text, "to": msg.to,
+    return {"subject": msg.subject, "markdown": msg.text, "html": msg.html,
+            "to": msg.to,
+            "attachments": [name for name, _, _ in msg.attachments],
             "enabled": (world.config or {}).get("email_digest", True)}
 
 
@@ -258,6 +260,9 @@ async def digest_send(db: DB, world: WorldDep, instructor: Instructor,
     from ..services.digest import build_digest
     from ..services.email import send_logged
 
+    if (world.config or {}).get("is_demo"):
+        raise GameError("the shared demo world doesn't send email — "
+                        "use Preview to read this week's brief")
     wk = _digest_week(world, week)
     msg = await build_digest(db, world, wk)
     await send_logged(db, msg, kind="digest", world_id=world.id, ref=f"week:{wk}")
@@ -275,7 +280,8 @@ class DigestSettingsIn(BaseModel):
 async def digest_settings_get(world: WorldDep, instructor: Instructor):
     config = world.config or {}
     return {"enabled": config.get("email_digest", True),
-            "last_sent_week": config.get("digest_sent_week", 0)}
+            "last_sent_week": config.get("digest_sent_week", 0),
+            "demo": bool(config.get("is_demo"))}
 
 
 @router.post("/worlds/{world_id}/instructor/digest/settings")
