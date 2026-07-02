@@ -166,6 +166,85 @@ export function Sparkline({ points, width = 280, height = 80, stroke = "#5f7a4a"
   );
 }
 
+const DIAGRAM_COLORS: Record<string, string> = {
+  sage: "#5f7a4a", terracotta: "#a84f2f", sky: "#4a7a96", ink: "#3b3023",
+};
+
+/** Painted-style economics diagram for tutor checks. Data space is 0-100 on
+    both axes; the spec contract lives in backend/app/pedagogy/bank.py. */
+export function Diagram({ spec, width = 360, height = 250 }: {
+  spec: any; width?: number; height?: number;
+}) {
+  const padL = 36, padR = 34, padT = 14, padB = 32;
+  const X = (x: number) => padL + (x / 100) * (width - padL - padR);
+  const Y = (y: number) => height - padB - (y / 100) * (height - padT - padB);
+  const color = (c: string) => DIAGRAM_COLORS[c] || DIAGRAM_COLORS.ink;
+  return (
+    <svg className="diagram" width={width} height={height}
+         viewBox={`0 0 ${width} ${height}`}
+         style={{ maxWidth: "100%", height: "auto" }} role="img"
+         aria-label={`${spec.ylab} against ${spec.xlab} diagram`}>
+      <rect x={0} y={0} width={width} height={height} rx={12} fill="#fffdf6"
+            stroke="#d9cba8" />
+      {/* axes */}
+      <line x1={X(0)} y1={Y(0)} x2={X(0)} y2={Y(102)} stroke="#6b5d49"
+            strokeWidth={1.5} />
+      <line x1={X(0)} y1={Y(0)} x2={X(103)} y2={Y(0)} stroke="#6b5d49"
+            strokeWidth={1.5} />
+      <text x={X(0) - 4} y={padT + 2} fontSize={11} fontWeight={600}
+            fill="#6b5d49" textAnchor="start">{spec.ylab}</text>
+      <text x={width - padR} y={height - 6} fontSize={11} fontWeight={600}
+            fill="#6b5d49" textAnchor="end">{spec.xlab}</text>
+      {/* dotted guides from a point to both axes, with readable values */}
+      {(spec.guides || []).map((g: any, i: number) => (
+        <g key={`g${i}`}>
+          <line x1={X(g.q)} y1={Y(0)} x2={X(g.q)} y2={Y(g.p)} stroke="#8a6a48"
+                strokeWidth={1} strokeDasharray="2 4" />
+          <line x1={X(0)} y1={Y(g.p)} x2={X(g.q)} y2={Y(g.p)} stroke="#8a6a48"
+                strokeWidth={1} strokeDasharray="2 4" />
+          <text x={X(g.q)} y={Y(0) + 12} fontSize={10} fill="#6b5d49"
+                textAnchor="middle">{g.q}</text>
+        </g>
+      ))}
+      {/* the ceiling / floor line */}
+      {spec.hline && (
+        <g>
+          <line x1={X(0)} y1={Y(spec.hline.p)} x2={X(100)} y2={Y(spec.hline.p)}
+                stroke="#b5485d" strokeWidth={2} strokeDasharray="7 5" />
+          <text x={X(100) + 3} y={Y(spec.hline.p) + 4} fontSize={10.5}
+                fontWeight={700} fill="#b5485d">{spec.hline.label}</text>
+          <text x={X(0) - 4} y={Y(spec.hline.p) + 4} fontSize={10}
+                fill="#b5485d" textAnchor="end">{spec.hline.p}</text>
+        </g>
+      )}
+      {/* curves */}
+      {(spec.lines || []).map((l: any, i: number) => {
+        const pts = l.pts.map(([x, y]: number[]) => `${X(x)},${Y(y)}`).join(" ");
+        const [lx, ly] = l.pts[l.pts.length - 1];
+        return (
+          <g key={`l${i}`}>
+            <polyline points={pts} fill="none" stroke={color(l.color)}
+                      strokeWidth={2.4} strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeDasharray={l.dashed ? "7 5" : undefined} />
+            <text x={X(lx) + 5} y={Y(ly) + 4} fontSize={12} fontWeight={700}
+                  fill={color(l.color)}>{l.label}</text>
+          </g>
+        );
+      })}
+      {/* named points (equilibria etc.) */}
+      {(spec.points || []).map((p: any, i: number) => (
+        <g key={`p${i}`}>
+          <circle cx={X(p.q)} cy={Y(p.p)} r={4} fill="#d9a93f"
+                  stroke="#3b3023" strokeWidth={1.2} />
+          {p.label && <text x={X(p.q) + 7} y={Y(p.p) - 6} fontSize={12}
+                            fontWeight={700} fill="#3b3023">{p.label}</text>}
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 /** Lightweight inline markdown (bold/italic) for LLM text — Pip writes in
     asterisks; render them instead of printing them. */
 export function InlineMd({ text }: { text: string }) {

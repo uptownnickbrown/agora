@@ -1,26 +1,143 @@
 /* Professor Pip: chat dock + tutor checks + the daily puzzle. */
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./api";
-import { Asset, Confetti, InlineMd } from "./ui";
+import { Asset, Confetti, Diagram, InlineMd } from "./ui";
 
 type Notify = (msg: string, error?: boolean) => void;
 
-export function PipDock({ wid, nudge, checkAvailable }: {
-  wid: string; nudge: string | null; checkAvailable?: boolean;
+/** Anywhere in the app can summon Pip: openPip("chat" | "check"). */
+export function openPip(mode: "chat" | "check" = "chat") {
+  window.dispatchEvent(new CustomEvent("agora-pip", { detail: { mode } }));
+}
+
+/** One tutor check, end to end: question (with optional diagram), answer,
+    feedback, next. Shared by the dock (compact) and the Study (roomy). */
+export function CheckCard({ wid, lo, notify, refresh, compact, onAnswered }: {
+  wid: string; lo?: string | null; notify?: Notify; refresh?: () => void;
+  compact?: boolean; onAnswered?: (out: any) => void;
+}) {
+  const [check, setCheck] = useState<any>(null);
+  const [answer, setAnswer] = useState("");
+  const [feedback, setFeedback] = useState<any>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    setFeedback(null); setAnswer(""); setCheck(null);
+    try {
+      const c = await api.get(
+        `/worlds/${wid}/tutor/check${lo ? `?lo=${encodeURIComponent(lo)}` : ""}`);
+      setCheck(c);
+    } catch (e: any) { notify?.(e.message, true); }
+  }, [wid, lo, notify]);
+  useEffect(() => { load(); }, [load]);
+
+  async function submit() {
+    if (!check || busy) return;
+    setBusy(true);
+    try {
+      const out = await api.post(`/worlds/${wid}/tutor/check`, {
+        question_id: check.question_id, answer,
+      });
+      setFeedback(out);
+      if (out.effort_gained > 0) {
+        notify?.(`+${out.effort_gained} effort — study pays.`);
+        refresh?.();
+      }
+      onAnswered?.(out);
+    } catch (e: any) { setFeedback({ feedback: e.message, correct: false, score: 0 }); }
+    setBusy(false);
+  }
+
+  if (!check) return <div className="muted" style={{ padding: 8 }}>
+    Pip shuffles his question cards…</div>;
+  if (check.done) return <div className="msg tutor">{check.message}</div>;
+
+  return (
+    <div style={{ padding: compact ? "8px 2px" : 0 }}>
+      <p style={{ margin: "6px 0", fontWeight: 600 }}>{check.prompt}</p>
+      {check.diagram && (
+        <div style={{ margin: "8px 0", textAlign: "center" }}>
+          <Diagram spec={check.diagram} width={compact ? 316 : 400}
+                   height={compact ? 220 : 270} />
+        </div>
+      )}
+      {check.kind === "mcq" ? (
+        <div className="col" style={{ gap: 6 }}>
+          {check.choices.map((c: string, i: number) => (
+            <button key={i}
+                    className={`check-choice ${answer === String(i) ? "" : "quiet"}`}
+                    disabled={!!feedback}
+                    onClick={() => setAnswer(String(i))}>
+              {String.fromCharCode(65 + i)}. {c}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <textarea rows={compact ? 3 : 4} style={{ width: "100%" }} value={answer}
+                  disabled={!!feedback}
+                  placeholder="One or two sentences…"
+                  onChange={(e) => setAnswer(e.target.value)} />
+      )}
+      {!feedback ? (
+        <button style={{ marginTop: 8 }} disabled={answer === "" || busy}
+                onClick={submit}>{busy ? "Grading…" : "Answer"}</button>
+      ) : (
+        <div className="msg tutor" style={{ marginTop: 8, maxWidth: "100%" }}>
+          {feedback.correct && <Confetti />}
+          <b className={feedback.correct ? "heat-good" : "heat-bad"}>
+            {feedback.correct ? `✓ ${feedback.score}/100` : `✗ ${feedback.score}/100`}
+          </b>{" "}
+          <InlineMd text={feedback.feedback} />
+          {feedback.effort_gained > 0 && (
+            <div className="heat-good" style={{ marginTop: 4 }}>
+              +{feedback.effort_gained} effort for today's first correct answer
+            </div>
+          )}
+          <div><button className="quiet" style={{ marginTop: 6 }}
+                       onClick={load}>Another</button></div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function PipDock({ wid, day, nudge, checkAvailable, inStudy, onGoStudy }: {
+  wid: string; day: number; nudge: string | null; checkAvailable?: boolean;
+  inStudy?: boolean; onGoStudy?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"chat" | "check">("chat");
   const [history, setHistory] = useState<{ role: string; content: string }[]>([]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
-  const [check, setCheck] = useState<any>(null);
-  const [answer, setAnswer] = useState("");
-  const [feedback, setFeedback] = useState<any>(null);
+  const [celebrating, setCelebrating] = useState(false);
   const [nudgeDismissed, setNudgeDismissed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // a fresh nudge un-dismisses; an old one stays dismissed
   useEffect(() => { setNudgeDismissed(false); }, [nudge]);
+
+  // Anyone can summon Pip (welcome card, the Study, nudges).
+  useEffect(() => {
+    const summon = (e: Event) => {
+      setOpen(true);
+      setMode((e as CustomEvent).detail?.mode === "check" ? "check" : "chat");
+    };
+    window.addEventListener("agora-pip", summon);
+    return () => window.removeEventListener("agora-pip", summon);
+  }, []);
+
+  // Once per world day: if Pip has a question waiting, open with it. The
+  // single biggest thing between a shy student and the tutor is the click.
+  // (Not in the Study — the question is already front and center there.)
+  useEffect(() => {
+    if (!checkAvailable || inStudy) return;
+    const key = `agora_pip_auto_${wid}`;
+    if (localStorage.getItem(key) === String(day)) return;
+    localStorage.setItem(key, String(day));
+    const t = setTimeout(() => { setOpen(true); setMode("check"); }, 1500);
+    return () => clearTimeout(t);
+  }, [checkAvailable, inStudy, wid, day]);
 
   const loadHistory = useCallback(
     () => api.get(`/worlds/${wid}/tutor/history`).then(setHistory).catch(() => {}),
@@ -28,7 +145,7 @@ export function PipDock({ wid, nudge, checkAvailable }: {
   useEffect(() => { if (open) loadHistory(); }, [open, loadHistory]);
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 99999 });
-  }, [history, feedback]);
+  }, [history, busy]);
 
   async function send() {
     if (!draft.trim() || busy) return;
@@ -45,24 +162,6 @@ export function PipDock({ wid, nudge, checkAvailable }: {
     setBusy(false);
   }
 
-  async function loadCheck() {
-    setMode("check"); setFeedback(null); setAnswer("");
-    const c = await api.get(`/worlds/${wid}/tutor/check`);
-    setCheck(c);
-  }
-
-  async function submitCheck() {
-    if (!check || busy) return;
-    setBusy(true);
-    try {
-      const out = await api.post(`/worlds/${wid}/tutor/check`, {
-        question_id: check.question_id, answer,
-      });
-      setFeedback(out);
-    } catch (e: any) { setFeedback({ feedback: e.message, correct: false }); }
-    setBusy(false);
-  }
-
   if (!open) {
     return (
       <div className="pip-dock" style={{ width: "auto" }}>
@@ -72,18 +171,30 @@ export function PipDock({ wid, nudge, checkAvailable }: {
             <button className="dismiss" aria-label="dismiss"
                     onClick={() => setNudgeDismissed(true)}>✕</button>
             {nudge}
+            {checkAvailable && (
+              <div>
+                <button style={{ marginTop: 8, padding: "4px 12px" }}
+                        onClick={() => { setOpen(true); setMode("check"); }}>
+                  Take today's check</button>
+              </div>
+            )}
           </div>
         )}
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <div className="pip-avatar" role="button"
+          <div role="button"
                title={checkAvailable ? "Pip has a question for you"
                                      : "Ask Professor Pip"}
-               style={{ cursor: "pointer", position: "relative",
-                        overflow: "visible" }}
+               style={{ cursor: "pointer", textAlign: "center" }}
                onClick={() => setOpen(true)}>
-            <Asset slot={nudge && !nudgeDismissed ? "pip/pip_talking" : "pip/pip_idle"}
-                   glyph="🐦" size={58} alt="Professor Pip" />
-            {checkAvailable && <span className="pip-badge" />}
+            <div className="pip-avatar"
+                 style={{ position: "relative", overflow: "visible",
+                          margin: "0 auto" }}>
+              <Asset slot={nudge && !nudgeDismissed ? "pip/pip_talking" : "pip/pip_idle"}
+                     glyph="🐦" size={62} alt="Professor Pip" />
+              {checkAvailable && <span className="pip-badge" />}
+            </div>
+            <span className="pip-label">
+              {checkAvailable ? "Pip has a question" : "Ask Pip"}</span>
           </div>
         </div>
       </div>
@@ -96,7 +207,7 @@ export function PipDock({ wid, nudge, checkAvailable }: {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div className="pip-avatar" style={{ width: 44, height: 44 }}>
             <Asset slot={busy ? "pip/pip_talking"
-                     : feedback?.correct ? "pip/pip_celebrating" : "pip/pip_idle"}
+                     : celebrating ? "pip/pip_celebrating" : "pip/pip_idle"}
                    glyph="🐦" size={38} alt="Professor Pip" />
           </div>
           <div>
@@ -109,7 +220,7 @@ export function PipDock({ wid, nudge, checkAvailable }: {
             <button className="quiet" style={{ padding: "3px 10px" }}
                     onClick={() => setMode("chat")}>Chat</button>
             <button className="quiet" style={{ padding: "3px 10px" }}
-                    onClick={loadCheck}>Quiz me</button>
+                    onClick={() => setMode("check")}>Quiz</button>
             <button className="quiet" style={{ padding: "3px 10px" }}
                     aria-label="close" onClick={() => setOpen(false)}>✕</button>
           </div>
@@ -140,47 +251,24 @@ export function PipDock({ wid, nudge, checkAvailable }: {
           </>
         )}
 
-        {mode === "check" && check && (
-          <div style={{ padding: "8px 2px" }}>
-            {check.done ? (
-              <div className="msg tutor">{check.message}</div>
-            ) : (
-              <>
-                <div className="kicker">tutor check</div>
-                <p style={{ margin: "6px 0" }}>{check.prompt}</p>
-                {check.kind === "mcq" ? (
-                  <div className="col" style={{ gap: 6 }}>
-                    {check.choices.map((c: string, i: number) => (
-                      <button key={i}
-                              className={answer === String(i) ? "" : "quiet"}
-                              style={{ textAlign: "left" }}
-                              onClick={() => setAnswer(String(i))}>
-                        {String.fromCharCode(65 + i)}. {c}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <textarea rows={3} style={{ width: "100%" }} value={answer}
-                            placeholder="One or two sentences…"
-                            onChange={(e) => setAnswer(e.target.value)} />
-                )}
-                {!feedback ? (
-                  <button style={{ marginTop: 8 }} disabled={answer === "" || busy}
-                          onClick={submitCheck}>Answer</button>
-                ) : (
-                  <div className="msg tutor" style={{ marginTop: 8 }}>
-                    {feedback.correct && <Confetti />}
-                    <b className={feedback.correct ? "heat-good" : "heat-bad"}>
-                      {feedback.correct ? `✓ ${feedback.score}/100` : `✗ ${feedback.score}/100`}
-                    </b>{" "}
-                    <InlineMd text={feedback.feedback} />
-                    <div><button className="quiet" style={{ marginTop: 6 }}
-                                 onClick={loadCheck}>Another</button></div>
-                  </div>
-                )}
-              </>
+        {mode === "check" && (
+          <>
+            <div className="kicker" style={{ marginTop: 6 }}>tutor check</div>
+            <CheckCard wid={wid} compact
+                       onAnswered={(out) => {
+                         setCelebrating(!!out.correct);
+                         setTimeout(() => setCelebrating(false), 2500);
+                       }} />
+            {onGoStudy && (
+              <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+                Want to pick the topic and see your mastery?{" "}
+                <a style={{ cursor: "pointer", fontWeight: 600,
+                            color: "var(--sage-dark)" }}
+                   onClick={() => { setOpen(false); onGoStudy(); }}>
+                  Open the Study</a>.
+              </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </div>

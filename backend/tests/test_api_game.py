@@ -499,3 +499,70 @@ async def test_puzzle_ignores_legacy_number_guesses(game):
     r = await client.post(f"/worlds/{wid}/puzzle/guess", headers=hdr(alice["token"]),
                           json={"terms": key["groups"][0]["terms"]})
     assert r.status_code == 200 and r.json()["result"] == "correct"
+
+
+def _bank_answer(question_id: str) -> str:
+    """A correct answer for any bank question (keyword fallback grades free text)."""
+    from app.pedagogy.bank import QUESTIONS
+
+    q = QUESTIONS[question_id]
+    return str(q.answer) if q.kind == "mcq" else " ".join(q.keywords)
+
+
+async def test_practice_targets_objective_and_never_runs_dry(game):
+    client, wid = game["client"], game["world_id"]
+    alice = game["students"][0]
+    for _ in range(6):  # more rounds than the LO has questions
+        r = await client.get(f"/worlds/{wid}/tutor/check?lo=ch3-equilibrium",
+                             headers=hdr(alice["token"]))
+        q = r.json()
+        assert "question_id" in q, q
+        assert "ch3-equilibrium" in q["lo_ids"]
+        r = await client.post(f"/worlds/{wid}/tutor/check", headers=hdr(alice["token"]),
+                              json={"question_id": q["question_id"],
+                                    "answer": _bank_answer(q["question_id"])})
+        assert r.status_code == 200
+    # mastery is now visible to the student, scored and attempted
+    r = await client.get(f"/worlds/{wid}/tutor/mastery", headers=hdr(alice["token"]))
+    row = next(m for m in r.json() if m["lo_id"] == "ch3-equilibrium")
+    assert row["pct"] is not None and row["attempts"] >= 6
+    r = await client.get(f"/worlds/{wid}/tutor/check?lo=not-a-real-lo",
+                         headers=hdr(alice["token"]))
+    assert r.status_code == 400
+
+
+async def test_diagram_questions_well_formed():
+    from app.pedagogy.bank import LEARNING_OBJECTIVES, QUESTIONS
+
+    diag = [q for q in QUESTIONS.values() if q.diagram]
+    assert len(diag) >= 10
+    for q in diag:
+        assert q.kind == "mcq" and 0 <= q.answer < len(q.choices)
+        assert all(lo in LEARNING_OBJECTIVES for lo in q.los)
+        for line in q.diagram["lines"]:
+            assert line["color"] in ("sage", "terracotta", "sky", "ink")
+            for x, y in line["pts"]:
+                assert 0 <= x <= 100 and 0 <= y <= 100
+
+
+async def test_first_correct_check_of_day_pays_effort(game):
+    client, wid = game["client"], game["world_id"]
+    bob = game["students"][1]
+    state = (await client.get(f"/worlds/{wid}/state", headers=hdr(bob["token"]))).json()
+    effort0 = state["player"]["effort"]
+    r = await client.get(f"/worlds/{wid}/tutor/check?lo=ch3-shortage-surplus",
+                         headers=hdr(bob["token"]))
+    q = r.json()
+    out = (await client.post(f"/worlds/{wid}/tutor/check", headers=hdr(bob["token"]),
+                             json={"question_id": q["question_id"],
+                                   "answer": _bank_answer(q["question_id"])})).json()
+    assert out["correct"] and out["effort_gained"] == 2
+    r = await client.get(f"/worlds/{wid}/tutor/check?lo=ch3-shortage-surplus",
+                         headers=hdr(bob["token"]))
+    q2 = r.json()
+    out2 = (await client.post(f"/worlds/{wid}/tutor/check", headers=hdr(bob["token"]),
+                              json={"question_id": q2["question_id"],
+                                    "answer": _bank_answer(q2["question_id"])})).json()
+    assert out2["correct"] and out2["effort_gained"] == 0
+    state = (await client.get(f"/worlds/{wid}/state", headers=hdr(bob["token"]))).json()
+    assert state["player"]["effort"] == min(40, effort0 + 2)

@@ -500,6 +500,32 @@ table.book td { padding: 3.5px 8px; text-align: right; }
   .tour-card { bottom: calc(92px + env(safe-area-inset-bottom)); }
 }
 
+/* -- the Study: mastery meters -- */
+.mastery-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 8px; border-radius: 10px; cursor: pointer;
+  transition: background 0.12s ease;
+}
+.mastery-row:hover { background: rgba(59, 48, 35, 0.05); }
+.mastery-row.active { background: #fbf6e7; box-shadow: 0 0 0 2px var(--gold); }
+.mastery-row .lo-text { flex: 1 1 200px; font-size: 13px; min-width: 0; }
+.mastery-row .mastery-meter { flex: 0 0 110px; }
+.mastery-row .lo-pct {
+  flex: 0 0 40px; text-align: right; font-weight: 700; font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.mastery-row .lo-practice { padding: 3px 12px; font-size: 12px; flex: none; }
+.check-choice { text-align: left; }
+
+/* -- pip label under the closed dock -- */
+.pip-label {
+  display: inline-block; margin-top: 5px; padding: 2px 12px;
+  background: rgba(22, 36, 29, 0.85); color: var(--parchment);
+  border: 1px solid rgba(246, 239, 221, 0.25); border-radius: 999px;
+  font-size: 11.5px; font-weight: 700; backdrop-filter: blur(6px);
+  box-shadow: 0 2px 8px rgba(10, 16, 12, 0.4);
+}
+
 /* -- pip check badge -- */
 @keyframes pip-pulse {
   0%, 100% { transform: scale(1); }

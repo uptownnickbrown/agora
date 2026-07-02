@@ -192,9 +192,13 @@ async def _llm_reply(db: AsyncSession, world: World, player: Player, message: st
 
 # -- tutor checks -----------------------------------------------------------------
 
-async def next_check(db: AsyncSession, world: World, player: Player) -> dict | None:
+async def next_check(db: AsyncSession, world: World, player: Player,
+                     lo_id: str | None = None) -> dict | None:
     """Pick the next contextual check: gameplay-triggered first, cadence floor
-    as fallback; never repeat a correctly-answered question."""
+    as fallback; never repeat a correctly-answered question.
+
+    With lo_id (practice mode, from the Study): draw only from that objective,
+    and once everything is answered start over — practice never runs dry."""
     answered = {
         row[0]
         for row in (
@@ -204,6 +208,21 @@ async def next_check(db: AsyncSession, world: World, player: Player) -> dict | N
             )
         ).all()
     }
+    attempts = await db.scalar(
+        select(func.count()).select_from(CheckAttempt).where(
+            CheckAttempt.player_id == player.id)
+    )
+    if lo_id is not None:
+        if lo_id not in LEARNING_OBJECTIVES:
+            raise GameError("unknown learning objective")
+        lo_pool = [q for q in QUESTIONS.values()
+                   if lo_id in q.los and q.week <= world.current_week]
+        if not lo_pool:
+            return None
+        pool = [q for q in lo_pool if q.id not in answered] or lo_pool
+        rng = random.Random(f"practice:{player.id}:{lo_id}:{attempts}")
+        q = rng.choice(pool)
+        return _check_payload(q)
     recent_kinds = {
         row[0]
         for row in (
@@ -235,9 +254,16 @@ async def next_check(db: AsyncSession, world: World, player: Player) -> dict | N
         return None
     rng = random.Random(f"{player.id}:{world.world_day}")
     q = rng.choice(pool)
+    return _check_payload(q)
+
+
+def _check_payload(q) -> dict:
     return {
         "question_id": q.id, "kind": q.kind, "prompt": q.prompt,
-        "choices": list(q.choices), "los": [LEARNING_OBJECTIVES[lo].text for lo in q.los],
+        "choices": list(q.choices),
+        "los": [LEARNING_OBJECTIVES[lo].text for lo in q.los],
+        "lo_ids": list(q.los),
+        "diagram": q.diagram,
     }
 
 
@@ -260,6 +286,21 @@ async def answer_check(db: AsyncSession, world: World, player: Player,
     else:
         score, feedback = await _grade_free(world, q, answer)
         correct = score >= 60
+    # First correct answer of the day earns a little effort — study pays.
+    effort_gained = 0
+    if correct:
+        earlier = await db.scalar(
+            select(func.count()).select_from(CheckAttempt).where(
+                CheckAttempt.player_id == player.id,
+                CheckAttempt.world_day == world.world_day,
+                CheckAttempt.correct,
+            )
+        )
+        if not earlier:
+            from .. import template as T
+
+            effort_gained = 2
+            player.effort = min(T.BALANCE["effort_cap"], player.effort + effort_gained)
     db.add(CheckAttempt(world_id=world.id, player_id=player.id, question_id=q.id,
                         world_day=world.world_day, answer=str(answer)[:2000],
                         correct=correct, score=score, feedback=feedback))
@@ -268,7 +309,8 @@ async def answer_check(db: AsyncSession, world: World, player: Player,
     await emit(db, world, "check_answered",
                {"question": q.id, "correct": correct, "score": score}, actor=player.id)
     player.last_active_day = world.world_day
-    return {"correct": correct, "score": score, "feedback": feedback}
+    return {"correct": correct, "score": score, "feedback": feedback,
+            "effort_gained": effort_gained}
 
 
 def _why(q) -> str:

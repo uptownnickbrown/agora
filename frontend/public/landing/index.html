@@ -460,7 +460,7 @@
   .ostable .mech { display: block; color: var(--ink-soft); font-size: 12.5px;
                    margin-top: 2px; font-style: italic; }
 
-  .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 430px), 1fr));
            gap: 22px; align-items: start; }
   .browser-frame { border-radius: 12px; overflow: hidden;
                    border: 1px solid rgba(246,239,221,0.18);
@@ -606,8 +606,9 @@
       <span class="kicker">See it live</span>
       <h2>This is what class looks like</h2>
       <p>These are real screens from a running section: a live market with today's caravan
-         visitor, the daily puzzle a whole class argues about, and the instructor dashboard
-         reading the same world.</p>
+         visitor, the daily puzzle a whole class argues about, Pip's Study with a
+         chart-reading check in progress, and the instructor dashboard reading the
+         same world.</p>
     </div>
     <div class="shots reveal">
       <div>
@@ -619,6 +620,11 @@
         <div class="browser-frame"><div class="bar"><i></i><i></i><i></i></div>
           <img src="/assets/marketing/shot_puzzle.png" alt="Common Threads, the daily puzzle, solved: four colored groups, a share card, and Professor Pip celebrating" width="1440" height="940"></div>
         <div class="shot-cap">Common Threads, solved flawlessly — the same sixteen tiles for the whole class, every day.</div>
+      </div>
+      <div>
+        <div class="browser-frame"><div class="bar"><i></i><i></i><i></i></div>
+          <img src="/assets/marketing/shot_study.png" alt="Pip's Study: per-objective mastery meters beside a supply-shift diagram question" width="1440" height="940"></div>
+        <div class="shot-cap">Pip's Study: every objective's mastery meter, and a drought on the chart to reason through.</div>
       </div>
       <div>
         <div class="browser-frame"><div class="bar"><i></i><i></i><i></i></div>
@@ -679,7 +685,7 @@
     <div class="numbers reveal">
       <div class="num-card"><div class="n">7</div><div class="l">weeks, one arc</div></div>
       <div class="num-card"><div class="n">29</div><div class="l">learning objectives<br>(OpenStax-aligned)</div></div>
-      <div class="num-card"><div class="n">36</div><div class="l">embedded tutor checks</div></div>
+      <div class="num-card"><div class="n">49</div><div class="l">embedded tutor checks</div></div>
       <div class="num-card"><div class="n">16</div><div class="l">one-click interventions</div></div>
       <div class="num-card"><div class="n">&lt;30</div><div class="l">min/week of your time</div></div>
       <div class="num-card"><div class="n">$0</div><div class="l">for students<br>(pairs with free OpenStax)</div></div>
@@ -975,7 +981,7 @@
         <div>
           <span class="kicker panel-kicker">The tutor</span>
           <h3 style="font-size:24px;margin:6px 0 8px;">Professor Pip, market pigeon</h3>
-          <p style="color:var(--ink-soft);font-size:15.5px;">A know-it-all pigeon with a head for prices, backed by a frontier LLM. Pip answers questions Socratically, in character, with the student's own holdings and market data in view. He nudges, he quizzes, he celebrates, and he <em>never</em> plays the game for them: no trading on their behalf, no leaking hidden information, no financial advice that does their thinking.</p>
+          <p style="color:var(--ink-soft);font-size:15.5px;">A know-it-all pigeon with a head for prices, backed by a frontier LLM. Pip answers questions Socratically, in character, with the student's own holdings and market data in view. He brings one question to every student every day &mdash; multiple choice, supply-and-demand charts to read, or a sentence to write &mdash; and in his Study, students watch their own mastery meters fill and drill any objective that wobbles. He nudges, he quizzes, he celebrates, and he <em>never</em> plays the game for them: no trading on their behalf, no leaking hidden information, no financial advice that does their thinking.</p>
           <div class="pip-bubble">"Coo! Your bread sold out the moment the Decree hit. Curious, isn't it? The price said one thing and the empty shelf said another. Which one was telling the truth?"</div>
         </div>
       </div>
@@ -1034,7 +1040,7 @@
       <div class="panel assess-card reveal">
         <span class="num">2</span>
         <h3>Mastery, not memory</h3>
-        <p>Each of 29 learning objectives carries a rolling, recency-weighted mastery estimate. Wrong-then-right counts as growth. You see the whole class as a heatmap and can tell at a glance which concept needs fifteen more minutes on Monday.</p>
+        <p>Each of 29 learning objectives carries a rolling, recency-weighted mastery estimate. Wrong-then-right counts as growth. You see the whole class as a heatmap; students see their own meters in Pip's Study and can practice any weak objective on the spot &mdash; so red cells tend to heal between lectures.</p>
       </div>
       <div class="panel assess-card reveal">
         <span class="num">3</span>

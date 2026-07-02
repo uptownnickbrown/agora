@@ -3,7 +3,8 @@ import { api, getToken, Me, PlayerState, setToken } from "./api";
 import { InstructorScreen } from "./instructor";
 import { Tour } from "./tour";
 import { Docks, MarketSquare, ShopScreen, Workshop } from "./places";
-import { PipDock, Puzzle } from "./pip";
+import { openPip, PipDock, Puzzle } from "./pip";
+import { Study } from "./study";
 import { Crier, GuildHall, Leaderboards, Merchant, Recap } from "./town";
 import { Asset, Coins, EffortBar, Toast } from "./ui";
 import "./theme.css";
@@ -253,6 +254,7 @@ const PLACES: [string, string, string][] = [
   ["workshop", "Workshop", "🔨"],
   ["docks", "The Docks", "🎣"],
   ["puzzle", "Daily Ledger", "🧮"],
+  ["study", "The Study", "📖"],
   ["crier", "The Crier", "📯"],
   ["guild", "Guild Hall", "🏛️"],
   ["boards", "Leaderboards", "🏆"],
@@ -470,6 +472,9 @@ function GameShell({ me, wid, notify, onLeave }: {
                   <button className="quiet" onClick={() => setPlace("puzzle")}>
                     <Asset slot="places/puzzle" glyph="🧮" size={16} />
                     {" "}Today's puzzle</button>
+                  <button className="quiet" onClick={() => openPip("chat")}>
+                    <Asset slot="pip/pip_idle" glyph="🐦" size={16} />
+                    {" "}Meet Professor Pip</button>
                 </div>
               </div>
             </div>
@@ -507,6 +512,8 @@ function GameShell({ me, wid, notify, onLeave }: {
           {place === "docks" &&
             <Docks state={state} wid={wid} notify={notify} refresh={refresh} />}
           {place === "puzzle" && <Puzzle wid={wid} notify={notify} refresh={refresh} />}
+          {place === "study" &&
+            <Study state={state} wid={wid} notify={notify} refresh={refresh} />}
           {place === "crier" && <Crier wid={wid} />}
           {place === "guild" &&
             <GuildHall state={state} wid={wid} notify={notify} refresh={refresh} />}
@@ -519,8 +526,12 @@ function GameShell({ me, wid, notify, onLeave }: {
       )}
      </div>
       {!isInstructorView && (
-        <PipDock wid={wid} nudge={state.nudge}
-                 checkAvailable={state.check_available} />
+        <PipDock wid={wid} day={state.world.day} nudge={state.nudge}
+                 checkAvailable={state.check_available}
+                 // Hold the daily auto-open while the tour talks or the Study
+                 // already has the question on screen.
+                 inStudy={place === "study" || tour === "student"}
+                 onGoStudy={() => setPlace("study")} />
       )}
       {!isInstructorView && tour === "student" &&
         <Tour role="student" go={setPlace} onDone={endTour} />}

@@ -37,8 +37,9 @@ async def history(db: DB, world: WorldDep, player: CurrentPlayer, limit: int = 3
 
 
 @router.get("/worlds/{world_id}/tutor/check")
-async def next_check(db: DB, world: WorldDep, player: CurrentPlayer):
-    check = await tutor_svc.next_check(db, world, player)
+async def next_check(db: DB, world: WorldDep, player: CurrentPlayer,
+                     lo: str | None = None):
+    check = await tutor_svc.next_check(db, world, player, lo_id=lo)
     return check or {"done": True,
                      "message": "Pip has nothing to quiz you on. Astonishing."}
 

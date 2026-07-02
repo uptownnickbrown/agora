@@ -507,7 +507,9 @@ function Heatmap({ wid }: { wid: string }) {
       <h3>Mastery heatmap</h3>
       <div className="muted" style={{ marginBottom: 6 }}>
         Each cell is one student's mastery of one learning objective, measured by
-        Pip's in-game tutor checks.
+        Pip's in-game tutor checks. Students see their own scores in the Study
+        and can practice any weak objective directly, so expect red cells to
+        heal between lectures.
       </div>
       {legend}
       {empty ? (
