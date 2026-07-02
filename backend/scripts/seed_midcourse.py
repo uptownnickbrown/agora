@@ -68,7 +68,8 @@ DB_URL = os.environ.get(
 PASSWORD = "agora-qa"
 
 
-async def main(days: int, suffix: str, demo: bool = False) -> None:
+async def main(days: int, suffix: str, demo: bool = False,
+               candidate: bool = False):
     tag = f"qa{suffix}"
     engine = create_async_engine(DB_URL)
     factory = async_sessionmaker(engine, expire_on_commit=False)
@@ -89,7 +90,8 @@ async def main(days: int, suffix: str, demo: bool = False) -> None:
                 db, prof, "Econ 101 (QA mid-course)", f"QA-{tag}",
                 {"expected_students": len(PERSONAS), "pacing": "calendar",
                  "rng_seed": f"qa-testbed-{suffix or 1}",
-                 **({"is_demo": True} if demo else {})},
+                 **({"is_demo": True} if demo else {}),
+                 **({"demo_candidate": True} if candidate else {})},
             )
             world_id, join_code = world.id, world.join_code
             bots: list[Bot] = []
@@ -131,6 +133,7 @@ async def main(days: int, suffix: str, demo: bool = False) -> None:
         print(f"  students:   {tag}.student00..{len(PERSONAS)-1:02d}@agora-u.edu / {PASSWORD}")
         print(f"  world_id:   {world_id}")
     await engine.dispose()
+    return world_id
 
 
 if __name__ == "__main__":

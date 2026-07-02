@@ -74,37 +74,70 @@ async def email_sweep(ctx: dict) -> int:
     return await process_due_digests(_session_factory())
 
 
-async def demo_reset(ctx: dict) -> int:
-    """Nightly demo rotation: retire the shared demo world (god-mode guests
-    leave ceilings and droughts behind) and seed a fresh mid-course one, so
-    the landing-page demo is always at its best. Requires tests/ + scripts/
-    in the image (see Dockerfile). No-op unless the demo is enabled here."""
+async def demo_reset(ctx: dict, force: bool = False) -> int:
+    """Nightly demo rotation, blue-green: seed a fresh mid-course world as an
+    unflagged CANDIDATE first, and only after the seed fully succeeds flip the
+    is_demo flag to it (one short transaction) while retiring the old world.
+    A seed that dies mid-run therefore never touches the live demo — the old
+    world keeps serving, and the next scheduled run retries.
+
+    Requires tests/ + scripts/ in the image (see Dockerfile). No-op unless
+    the demo is enabled here. `force=True` (manual runs) skips the freshness
+    guard."""
     import logging
     import time
     from datetime import datetime, timedelta, timezone
 
+    log = logging.getLogger("agora.worker")
     settings = get_settings()
     if settings.env not in ("dev", "test") and not settings.demo_enabled:
         return 0
     factory = _session_factory()
+    now = datetime.now(timezone.utc)
+
+    def aware(dt):  # sqlite hands back naive datetimes; treat them as UTC
+        return dt if dt is None or dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
     async with factory() as db:
-        async with db.begin():
-            worlds = (await db.scalars(select(World))).all()
-            demos = [w for w in worlds if (w.config or {}).get("is_demo")]
-            fresh_cutoff = datetime.now(timezone.utc) - timedelta(hours=20)
-            if any(w.created_at and w.created_at >= fresh_cutoff for w in demos):
-                return 0  # already rotated today (restart storm guard)
-            for w in demos:
-                w.config = {**w.config, "is_demo": False}
-                w.state = "epilogue"  # retire: stops close/tick attention
+        worlds = (await db.scalars(select(World))).all()
+        flagged = [w.id for w in worlds if (w.config or {}).get("is_demo")]
+        # Guard keys on the LIVE demo world's age: a fresh one means we
+        # already rotated today; a failed seed never advances the clock, so
+        # the next scheduled run naturally becomes the retry.
+        fresh_cutoff = now - timedelta(hours=20)
+        if not force and any(
+                w.created_at and aware(w.created_at) >= fresh_cutoff
+                for w in worlds if w.id in flagged):
+            return 0
+
     try:
         from scripts.seed_midcourse import main as seed_main
 
-        await seed_main(25, f"demo{time.strftime('%m%d%H%M')}", demo=True)
-        return 1
+        new_id = await seed_main(25, f"demo{time.strftime('%m%d%H%M%S')}",
+                                 demo=False, candidate=True)
     except Exception:  # noqa: BLE001
-        logging.getLogger("agora.worker").exception("demo reset failed")
+        log.exception("demo seed failed — keeping the current demo world live")
         return 0
+
+    # The switchover: short, atomic, and only reachable on a complete seed.
+    async with factory() as db:
+        async with db.begin():
+            worlds = (await db.scalars(select(World))).all()
+            for w in worlds:
+                config = w.config or {}
+                if w.id == new_id:
+                    w.config = {**config, "is_demo": True,
+                                "demo_candidate": False}
+                elif config.get("is_demo"):
+                    w.config = {**config, "is_demo": False}
+                    w.state = "epilogue"  # retire: stops close/tick attention
+                elif (config.get("demo_candidate")
+                      and w.created_at
+                      and aware(w.created_at) < now - timedelta(hours=20)):
+                    # leftovers from failed seeds: quietly retire
+                    w.state = "epilogue"
+    log.info("demo rotation complete: world %s is live", new_id)
+    return 1
 
 
 async def fast_tick(ctx: dict) -> int:
@@ -133,9 +166,11 @@ class WorkerSettings:
         # Every 10 min: digests land within minutes of a week boundary,
         # whether the close cron or a manual advance crossed it.
         cron(email_sweep, minute={9, 19, 29, 39, 49, 59}),
-        # After the nightly closes: retire yesterday's demo world, seed a
-        # fresh one (a ~1 min simulation through the real service layer).
+        # After the nightly closes: seed a fresh demo world and flip to it.
+        # Scheduled twice — the freshness guard makes the second run a no-op
+        # when the first succeeded, and an automatic retry when it didn't.
         cron(demo_reset, hour={5}, minute={30}),
+        cron(demo_reset, hour={6}, minute={45}),
     ]
     job_timeout = 900  # the demo reseed simulates 25 days; give it room
     redis_settings = RedisSettings.from_dsn(get_settings().redis_url)

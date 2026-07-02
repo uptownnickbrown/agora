@@ -74,18 +74,22 @@ line-oriented JSON-RPC on stdio. Two sharp edges:
 
 The demo world is ordinary data in prod Postgres — it survives redeploys.
 
-**It rotates itself nightly**: the worker's `demo_reset` cron (05:30 UTC,
-right after the daily closes) retires the current demo world (state →
-epilogue, `is_demo` unflagged) and seeds a fresh week-4 world with bot
-history, so god-mode leftovers from visitors never linger more than a day.
-The cron is a no-op unless `AGORA_DEMO_ENABLED=true` (set it on the worker
-AND the api service), skips if the current demo world is under 20 hours old,
-and needs the image to contain `tests/` + `scripts/` (the Dockerfile copies
-both). Retired demo worlds accumulate as epilogue rows — harmless, but worth
-an occasional cleanup.
+**It rotates itself nightly, blue-green**: the worker's `demo_reset` cron
+(05:30 UTC, retried 06:45 if needed) seeds a fresh week-4 world as an
+UNFLAGGED candidate first, and only after the seed fully completes flips
+`is_demo` to it in one short transaction while retiring the old world to
+epilogue. A seed that dies mid-run therefore never touches the live demo —
+the old world keeps serving and the next scheduled run retries. The
+freshness guard (skip if the LIVE demo world is under 20 hours old) only
+advances on success, which is what makes the second cron slot a retry.
+Stale candidates from failed seeds are retired automatically. The cron is a
+no-op unless `AGORA_DEMO_ENABLED=true` (set on worker AND api), and needs
+the image to contain `tests/` + `scripts/` (the Dockerfile copies both).
+Retired worlds accumulate as epilogue rows — harmless.
 
-Manual rotation (e.g. mid-day, after a workshop demo went feral) still works
-from your machine through the PG public proxy:
+Manual rotation (same code path, guard skipped) works from your machine
+through the PG public proxy — safe to rerun if the proxy drops the long
+seed, since the flip only happens on success:
 
 ```sh
 cd backend
