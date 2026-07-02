@@ -108,19 +108,27 @@ function Dashboard({ wid, notify }: { wid: string; notify: Notify }) {
               title="Shared demo world: lifecycle buttons are disabled; interventions work.">
               <Asset slot="ui/icon_flask" glyph="🧪" size={14} /> Demo world</span>}
           </div>
-          <div className="row" style={{ marginTop: 10 }}>
-            <button onClick={() => act(`/worlds/${wid}/instructor/close-day`, undefined,
-                                       "Day closed.")}>
-              Run daily close</button>
-            <button className="wood" onClick={() =>
-              act(`/worlds/${wid}/instructor/advance-week`, undefined, "Week advanced.")}>
-              Advance week</button>
-            <button className="quiet"
-              title="Moves the world to its epilogue: trading stops and students see their recaps."
-              onClick={() =>
-                act(`/worlds/${wid}/instructor/state`, { state: "epilogue" },
-                    "World moved to epilogue.")}>End world</button>
-          </div>
+          {w.demo ? (
+            <div className="muted" style={{ marginTop: 10 }}>
+              This shared demo world runs and reseeds itself nightly, so the
+              lifecycle controls are put away. Everything else is fair game —
+              try the Interventions tab and cause a drought.
+            </div>
+          ) : (
+            <div className="row" style={{ marginTop: 10 }}>
+              <button onClick={() => act(`/worlds/${wid}/instructor/close-day`, undefined,
+                                         "Day closed.")}>
+                Run daily close</button>
+              <button className="wood" onClick={() =>
+                act(`/worlds/${wid}/instructor/advance-week`, undefined, "Week advanced.")}>
+                Advance week</button>
+              <button className="quiet"
+                title="Moves the world to its epilogue: trading stops and students see their recaps."
+                onClick={() =>
+                  act(`/worlds/${wid}/instructor/state`, { state: "epilogue" },
+                      "World moved to epilogue.")}>End world</button>
+            </div>
+          )}
           <div style={{ marginTop: 8 }}><RulesChips rules={w.market_rules} /></div>
         </div>
         <div className="panel grow">
@@ -715,14 +723,16 @@ function Playbook({ wid }: { wid: string }) {
       </div>
       <div className="row" style={{ alignItems: "center" }}>
         <label>Week <input type="number" min={1} max={7} style={{ width: 56 }}
-                           value={week}
+                           value={week} placeholder="now"
                            onChange={(e) => setWeek(
                              e.target.value === "" ? "" : +e.target.value)} /></label>
         <button onClick={generate} disabled={busy}>
-          {busy ? "Writing…" : "Generate"}</button>
+          {busy ? "Writing… (about half a minute)" : "Generate"}</button>
         {pb && <button className="quiet" onClick={() => {
           navigator.clipboard?.writeText(pb.markdown);
         }}>Copy Markdown</button>}
+        {!pb && !busy && <span className="muted">
+          Leave the week blank for the current one.</span>}
       </div>
       {pb && (
         <div style={{ background: "#fffdf6", padding: "8px 18px 14px",

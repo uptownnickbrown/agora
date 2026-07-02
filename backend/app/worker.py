@@ -74,6 +74,39 @@ async def email_sweep(ctx: dict) -> int:
     return await process_due_digests(_session_factory())
 
 
+async def demo_reset(ctx: dict) -> int:
+    """Nightly demo rotation: retire the shared demo world (god-mode guests
+    leave ceilings and droughts behind) and seed a fresh mid-course one, so
+    the landing-page demo is always at its best. Requires tests/ + scripts/
+    in the image (see Dockerfile). No-op unless the demo is enabled here."""
+    import logging
+    import time
+    from datetime import datetime, timedelta, timezone
+
+    settings = get_settings()
+    if settings.env not in ("dev", "test") and not settings.demo_enabled:
+        return 0
+    factory = _session_factory()
+    async with factory() as db:
+        async with db.begin():
+            worlds = (await db.scalars(select(World))).all()
+            demos = [w for w in worlds if (w.config or {}).get("is_demo")]
+            fresh_cutoff = datetime.now(timezone.utc) - timedelta(hours=20)
+            if any(w.created_at and w.created_at >= fresh_cutoff for w in demos):
+                return 0  # already rotated today (restart storm guard)
+            for w in demos:
+                w.config = {**w.config, "is_demo": False}
+                w.state = "epilogue"  # retire: stops close/tick attention
+    try:
+        from scripts.seed_midcourse import main as seed_main
+
+        await seed_main(25, f"demo{time.strftime('%m%d%H%M')}", demo=True)
+        return 1
+    except Exception:  # noqa: BLE001
+        logging.getLogger("agora.worker").exception("demo reset failed")
+        return 0
+
+
 async def fast_tick(ctx: dict) -> int:
     import logging
 
@@ -93,12 +126,16 @@ async def fast_tick(ctx: dict) -> int:
 
 
 class WorkerSettings:
-    functions = [daily_market_close, fast_tick, email_sweep]
+    functions = [daily_market_close, fast_tick, email_sweep, demo_reset]
     cron_jobs = [
         cron(daily_market_close, hour={4}, minute={59}),  # 11:59pm ET ~= 04:59 UTC
         cron(fast_tick, minute=set(range(0, 60, 5))),
         # Every 10 min: digests land within minutes of a week boundary,
         # whether the close cron or a manual advance crossed it.
         cron(email_sweep, minute={9, 19, 29, 39, 49, 59}),
+        # After the nightly closes: retire yesterday's demo world, seed a
+        # fresh one (a ~1 min simulation through the real service layer).
+        cron(demo_reset, hour={5}, minute={30}),
     ]
+    job_timeout = 900  # the demo reseed simulates 25 days; give it room
     redis_settings = RedisSettings.from_dsn(get_settings().redis_url)

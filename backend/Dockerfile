@@ -5,6 +5,9 @@ COPY app ./app
 COPY sim ./sim
 COPY alembic.ini ./
 COPY alembic ./alembic
+# tests/bots.py + scripts/seed_midcourse.py power the nightly demo reset
+COPY tests ./tests
+COPY scripts ./scripts
 RUN pip install --no-cache-dir .
 EXPOSE 8000
 # api service: this CMD. worker service overrides with: arq app.worker.WorkerSettings

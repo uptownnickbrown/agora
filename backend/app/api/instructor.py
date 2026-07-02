@@ -49,7 +49,10 @@ async def create_world(body: CreateWorldIn, db: DB, user: CurrentUser):
 @router.get("/worlds/{world_id}/instructor/dashboard")
 async def dashboard(db: DB, world: WorldDep, instructor: Instructor):
     players = (
-        await db.scalars(select(Player).where(Player.world_id == world.id, ~Player.is_npc))
+        await db.scalars(
+            select(Player).where(Player.world_id == world.id, ~Player.is_npc)
+            .order_by(Player.coins.desc())
+        )
     ).all()
     day_stats = (
         await db.scalars(

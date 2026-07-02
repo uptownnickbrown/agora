@@ -73,7 +73,19 @@ line-oriented JSON-RPC on stdio. Two sharp edges:
 ## Demo world (landing-page "jump into a course")
 
 The demo world is ordinary data in prod Postgres — it survives redeploys.
-Re-seed / rotate it from your machine through the PG public proxy:
+
+**It rotates itself nightly**: the worker's `demo_reset` cron (05:30 UTC,
+right after the daily closes) retires the current demo world (state →
+epilogue, `is_demo` unflagged) and seeds a fresh week-4 world with bot
+history, so god-mode leftovers from visitors never linger more than a day.
+The cron is a no-op unless `AGORA_DEMO_ENABLED=true` (set it on the worker
+AND the api service), skips if the current demo world is under 20 hours old,
+and needs the image to contain `tests/` + `scripts/` (the Dockerfile copies
+both). Retired demo worlds accumulate as epilogue rows — harmless, but worth
+an occasional cleanup.
+
+Manual rotation (e.g. mid-day, after a workshop demo went feral) still works
+from your machine through the PG public proxy:
 
 ```sh
 cd backend
@@ -82,12 +94,10 @@ AGORA_DATABASE_URL="postgresql+asyncpg://postgres:<pw>@acela.proxy.rlwy.net:5466
 ```
 
 (Password: Railway dashboard → Postgres → Variables, or `railway variables
---service Postgres`.) This unflags old demo worlds and seeds a fresh week-4
-world with bot history. Retired demo worlds accumulate — harmless, but worth
-an occasional cleanup. A nightly cron for this is a known TODO.
+--service Postgres`.)
 
-`demo_enabled=true` must be set on the api service for `/demo/*` endpoints to
-work outside dev.
+`AGORA_DEMO_ENABLED=true` must be set on the api service for `/demo/*`
+endpoints to work outside dev — and on the worker for the nightly rotation.
 
 ## Email (Monday Brief digests + magic links)
 

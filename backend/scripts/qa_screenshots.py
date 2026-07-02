@@ -119,7 +119,7 @@ def main(out, only):
                 print(f"  ⚠️ {label}: {type(e).__name__}")
         try:
             p.click(".pip-avatar", timeout=4000); s.shot(p, "w4-19-pip-chat")
-            p.click("button:has-text('quiz me')", timeout=3000)
+            p.click("button:has-text('Quiz')", timeout=3000)
             s.shot(p, "w4-19b-pip-quiz")
         except Exception as e:
             print(f"  ⚠️ pip: {type(e).__name__}")
