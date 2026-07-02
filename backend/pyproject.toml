@@ -20,7 +20,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "ruff>=0.7"]
+# beautifulsoup4 is only for scripts/scrape_openstax.py (a dev-time content
+# refresh); the app itself never fetches — the scraped text ships committed
+# in app/pedagogy/openstax.py.
+dev = ["pytest>=8.0", "ruff>=0.7", "beautifulsoup4>=4.12"]
 
 
 [tool.ruff]
