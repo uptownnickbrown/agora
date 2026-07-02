@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     app_base_url: str = "http://localhost:5173"
     # Allows POST /demo/* to mint visitor sessions in the demo world.
     demo_enabled: bool = False
+    # Shared secret for HTTPS-triggered ops actions (demo rotation). Empty =
+    # those endpoints are disabled.
+    ops_token: str = ""
     # Tutor model tiers (DECISIONS.md #7)
     model_classify: str = "claude-haiku-4-5"
     model_tutor: str = "claude-sonnet-4-6"

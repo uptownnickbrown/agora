@@ -87,9 +87,22 @@ no-op unless `AGORA_DEMO_ENABLED=true` (set on worker AND api), and needs
 the image to contain `tests/` + `scripts/` (the Dockerfile copies both).
 Retired worlds accumulate as epilogue rows — harmless.
 
-Manual rotation (same code path, guard skipped) works from your machine
-through the PG public proxy — safe to rerun if the proxy drops the long
-seed, since the flip only happens on success:
+Manual rotation, easiest first:
+
+1. **HTTPS ops endpoint** (works from anywhere, no DB creds — the api just
+   enqueues the job and the worker seeds over private networking):
+
+   ```sh
+   curl -X POST https://agora.uptownnickbrown.com/api/admin/demo/rotate \
+        -H "X-Agora-Ops-Token: $AGORA_OPS_TOKEN"
+   ```
+
+   Requires `AGORA_OPS_TOKEN` set on the api service (empty disables the
+   endpoint). Rotation completes on the worker a minute or two later.
+
+2. **Direct DB** (same code path, guard skipped) through the PG public
+   proxy — safe to rerun if the proxy drops the long seed, since the flip
+   only happens on success:
 
 ```sh
 cd backend

@@ -113,3 +113,42 @@ async def test_demo_rotation_retires_stale_candidates(client, session_factory,
     assert await worker.demo_reset({}, force=True) == 1
     stale_state = await _get_world(session_factory, stale["world_id"])
     assert stale_state["state"] == "epilogue"
+
+
+async def test_ops_rotate_endpoint(client, monkeypatch):
+    from app.config import get_settings
+
+    # disabled without a configured token
+    r = await client.post("/admin/demo/rotate",
+                          headers={"X-Agora-Ops-Token": "anything"})
+    assert r.status_code == 403
+
+    monkeypatch.setattr(get_settings(), "ops_token", "sekrit")
+    r = await client.post("/admin/demo/rotate",
+                          headers={"X-Agora-Ops-Token": "wrong"})
+    assert r.status_code == 403
+
+    enqueued = []
+
+    class FakePool:
+        async def enqueue_job(self, name, **kw):
+            enqueued.append((name, kw))
+
+            class J:
+                job_id = "job-1"
+
+            return J()
+
+        async def close(self):
+            pass
+
+    async def fake_create_pool(*a, **k):
+        return FakePool()
+
+    import arq
+
+    monkeypatch.setattr(arq, "create_pool", fake_create_pool)
+    r = await client.post("/admin/demo/rotate",
+                          headers={"X-Agora-Ops-Token": "sekrit"})
+    assert r.status_code == 200 and r.json()["enqueued"] == "job-1"
+    assert enqueued == [("demo_reset", {"force": True})]
