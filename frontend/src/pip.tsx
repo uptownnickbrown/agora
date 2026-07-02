@@ -107,11 +107,11 @@ export function PipDock({ wid, nudge, checkAvailable }: {
           </div>
           <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
             <button className="quiet" style={{ padding: "3px 10px" }}
-                    onClick={() => setMode("chat")}>chat</button>
+                    onClick={() => setMode("chat")}>Chat</button>
             <button className="quiet" style={{ padding: "3px 10px" }}
-                    onClick={loadCheck}>quiz me</button>
+                    onClick={loadCheck}>Quiz me</button>
             <button className="quiet" style={{ padding: "3px 10px" }}
-                    onClick={() => setOpen(false)}>✕</button>
+                    aria-label="close" onClick={() => setOpen(false)}>✕</button>
           </div>
         </div>
 
@@ -187,48 +187,114 @@ export function PipDock({ wid, nudge, checkAvailable }: {
   );
 }
 
+/* Common Threads: sixteen terms, four hidden groups, four mistakes.
+   The whole class gets the same board each day — argue accordingly. */
+
+const TIER_EMOJI = ["🟨", "🟩", "🟦", "🟪"]; // share-text only, never UI chrome
+
 export function Puzzle({ wid, notify, refresh }: {
   wid: string; notify: Notify; refresh: () => void;
 }) {
   const [state, setState] = useState<any>(null);
-  const [guess, setGuess] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [order, setOrder] = useState<string[]>([]);
+  const [shakeSel, setShakeSel] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [landed, setLanded] = useState<any | null>(null); // group banner animating in
 
   const load = useCallback(
     () => api.get(`/worlds/${wid}/puzzle`).then(setState).catch(() => {}), [wid]);
   useEffect(() => { load(); }, [load]);
 
+  // Board = today's terms minus solved ones, in server order until shuffled.
+  useEffect(() => {
+    if (!state) return;
+    const found = new Set(state.found.flatMap((g: any) => g.terms));
+    setOrder((cur) => {
+      const remaining = state.terms.filter((t: string) => !found.has(t));
+      const keep = cur.filter((t) => remaining.includes(t));
+      const missing = remaining.filter((t: string) => !keep.includes(t));
+      return [...keep, ...missing];
+    });
+    setSelected((sel) => sel.filter((t) => !found.has(t)));
+  }, [state]);
+
+  function toggle(term: string) {
+    if (busy || state?.finished) return;
+    setSelected((sel) => sel.includes(term)
+      ? sel.filter((t) => t !== term)
+      : sel.length < 4 ? [...sel, term] : sel);
+  }
+
+  function shuffle() {
+    setOrder((cur) => {
+      const next = [...cur];
+      for (let i = next.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [next[i], next[j]] = [next[j], next[i]];
+      }
+      return next;
+    });
+  }
+
   async function submit() {
-    const g = parseInt(guess, 10);
-    if (isNaN(g)) return;
+    if (selected.length !== 4 || busy) return;
+    setBusy(true);
     try {
-      const out = await api.post(`/worlds/${wid}/puzzle/guess`, { guess: g });
-      if (out.solved) notify("📈 Solved! +2 effort. Tell your friends (not the answer).");
-      else if (out.finished) notify("The ledger closes. Tomorrow, redemption.", true);
-      setGuess("");
-      await load(); refresh();
+      const out = await api.post(`/worlds/${wid}/puzzle/guess`, { terms: selected });
+      if (out.result === "correct") {
+        setLanded(out.group);
+        setTimeout(() => setLanded(null), 900);
+        if (out.solved) {
+          notify(`Solved! +${out.effort_gained} effort. Pip is insufferably proud.`);
+          refresh();
+        }
+      } else if (out.result === "one_away") {
+        setShakeSel(true); setTimeout(() => setShakeSel(false), 500);
+        notify("One away! Coo… so close.", true);
+      } else if (out.result === "already_guessed") {
+        notify("You already tried that set.", true);
+      } else {
+        setShakeSel(true); setTimeout(() => setShakeSel(false), 500);
+        if (out.finished) notify("The ledger closes. Tomorrow, redemption.", true);
+      }
+      if (out.result === "correct") setSelected([]);
+      await load();
     } catch (e: any) { notify(e.message, true); }
+    setBusy(false);
   }
 
   if (!state) return <div className="panel">Unrolling today's ledger…</div>;
 
-  const heatClass = (f: string) =>
-    f === "correct" ? "correct" : f.includes("scalding") ? "scalding"
-      : f.includes("warm") ? "warm" : "cold";
-  const arrow = (f: string) =>
-    f === "correct" ? "✓" : f.startsWith("higher") ? "↑" : "↓";
+  const shareCard = state.guess_tiers
+    .map((tiers: number[]) => tiers.map((t) => TIER_EMOJI[t]).join(""))
+    .join("\n");
 
-  const shareCard = state.feedback
-    .map((f: string) => f === "correct" ? "🟩" : f.includes("scalding") ? "🟥"
-      : f.includes("warm") ? "🟧" : "🟦").join("");
+  function copyShare() {
+    navigator.clipboard?.writeText(
+      `Common Threads — Day ${state.day}\n${shareCard}`);
+    notify("Copied. Go gloat.");
+  }
+
+  const remaining = order.filter(
+    (t) => !state.found.some((g: any) => g.terms.includes(t)));
+  const unfound = state.finished && state.reveal
+    ? state.reveal.filter((g: any) =>
+        !state.found.some((f: any) => f.name === g.name))
+    : [];
 
   return (
-    <div className="panel" style={{ maxWidth: 480, margin: "0 auto",
+    <div className="panel" style={{ maxWidth: 560, margin: "0 auto",
                                     textAlign: "center" }}>
-      <h3><Asset slot="places/puzzle" glyph="🧮" size={20} />
-        {" "}Market Mastermind — Day {state.day}</h3>
+      <h3 style={{ marginBottom: 2 }}>
+        <Asset slot="places/puzzle" glyph="🧮" size={22} />
+        {" "}Common Threads — Day {state.day}</h3>
+      <div className="muted" style={{ marginBottom: 10 }}>
+        Find four groups of four. Everyone in class gets today's board.
+      </div>
       {(state.streak > 0 || state.streak_best > 0) && (
-        <div style={{ marginBottom: 8 }}>
-          <span className="streak-chip" title="puzzle streak">
+        <div style={{ marginBottom: 10 }}>
+          <span className="streak-chip" title="Daily puzzle streak — solve every day to keep it alive.">
             <Asset slot="ui/icon_flame" glyph="🔥" size={13} />
             {" "}{state.streak} day{state.streak === 1 ? "" : "s"}
             {state.streak_best > state.streak && <span style={{ opacity: 0.7 }}>
@@ -236,45 +302,72 @@ export function Puzzle({ wid, notify, refresh }: {
           </span>
         </div>
       )}
-      <p>The mystery: yesterday's close for <b>{state.good}</b>.</p>
-      <p className="muted" style={{ fontStyle: "italic" }}>Clue: {state.clue}</p>
-      <div className="puzzle-grid" style={{ alignItems: "center" }}>
-        {state.guesses.map((g: number, i: number) => (
-          <div key={i} className="puzzle-row">
-            <div className={`puzzle-cell ${heatClass(state.feedback[i])}`}>{g}</div>
-            <div style={{ width: 80, textAlign: "left" }}>
-              {arrow(state.feedback[i])} {state.feedback[i].split(":")[1] || "exact!"}
-            </div>
-          </div>
-        ))}
-      </div>
-      {!state.finished ? (
-        <div className="row" style={{ justifyContent: "center", alignItems: "center" }}>
-          <input type="number" min={10} max={99} value={guess} style={{ width: 90 }}
-                 placeholder="10–99"
-                 onChange={(e) => setGuess(e.target.value)}
-                 onKeyDown={(e) => e.key === "Enter" && submit()} />
-          <button onClick={submit}>
-            Guess ({state.guesses.length + 1}/{state.max_guesses})
-          </button>
+
+      {state.found.map((g: any) => (
+        <div key={g.name}
+             className={`thread-banner tier${g.tier} ${landed?.name === g.name ? "landed" : ""}`}>
+          <b>{g.name}</b>
+          <div>{g.terms.join(" · ")}</div>
         </div>
-      ) : (
-        <div>
-          {state.solved && <Confetti />}
-          <div style={{ margin: "6px 0" }}>
-            <Asset slot={state.solved ? "pip/pip_celebrating" : "pip/pip_concerned"}
-                   glyph={state.solved ? "🎉" : "🐦"} size={72}
-                   alt={state.solved ? "Pip celebrates" : "Pip consoles"} />
+      ))}
+      {unfound.map((g: any) => (
+        <div key={g.name} className={`thread-banner tier${g.tier} missed`}>
+          <b>{g.name}</b>
+          <div>{g.terms.join(" · ")}</div>
+        </div>
+      ))}
+
+      {!state.finished && (
+        <>
+          <div className="thread-grid">
+            {remaining.map((t) => (
+              <button key={t} type="button"
+                      className={`thread-tile ${selected.includes(t) ? "picked" : ""}
+                                  ${selected.includes(t) && shakeSel ? "shake" : ""}`}
+                      onClick={() => toggle(t)}>
+                {t}
+              </button>
+            ))}
           </div>
-          <p>{state.solved ? "Solved! +2 effort, and Pip is insufferably proud."
-            : "Closed for the day. Tomorrow, redemption."}</p>
-          <div style={{ fontSize: 22, letterSpacing: 2 }}>{shareCard}</div>
-          <button className="quiet" style={{ marginTop: 6 }}
-                  onClick={() => {
-                    navigator.clipboard?.writeText(
-                      `Market Mastermind day ${state.day}: ${shareCard}`);
-                    notify("Copied. Go gloat.");
-                  }}>copy share card</button>
+          <div style={{ display: "flex", justifyContent: "center", gap: 6,
+                        alignItems: "center", margin: "10px 0 4px" }}>
+            <span className="muted">Mistakes left:</span>
+            {Array.from({ length: state.max_mistakes }, (_, i) => (
+              <span key={i} className={`mistake-dot ${
+                i < state.mistakes_left ? "" : "burned"}`} />
+            ))}
+          </div>
+          <div className="row" style={{ justifyContent: "center", marginTop: 8 }}>
+            <button className="quiet" onClick={shuffle}>Shuffle</button>
+            <button className="quiet" disabled={selected.length === 0}
+                    onClick={() => setSelected([])}>Deselect</button>
+            <button disabled={selected.length !== 4 || busy} onClick={submit}>
+              Submit</button>
+          </div>
+          <div className="muted" style={{ marginTop: 10 }}>
+            Solve it for +{state.reward_effort} effort
+            (+{state.flawless_bonus} more with a clean sheet).
+          </div>
+        </>
+      )}
+
+      {state.finished && (
+        <div style={{ marginTop: 10 }}>
+          {state.solved && <Confetti />}
+          <Asset slot={state.solved ? "pip/pip_celebrating" : "pip/pip_concerned"}
+                 glyph="🐦" size={72}
+                 alt={state.solved ? "Pip celebrates" : "Pip consoles"} />
+          <p style={{ marginTop: 4 }}>
+            {state.solved
+              ? state.mistakes_left === state.max_mistakes
+                ? "Flawless. Not a thread out of place."
+                : "Solved! The threads come together."
+              : "The threads slipped away today. Tomorrow, redemption."}
+          </p>
+          <div style={{ fontSize: 20, letterSpacing: 2, lineHeight: 1.25,
+                        whiteSpace: "pre" }}>{shareCard}</div>
+          <button className="quiet" style={{ marginTop: 8 }} onClick={copyShare}>
+            Copy share card</button>
         </div>
       )}
     </div>

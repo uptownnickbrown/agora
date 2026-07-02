@@ -1,6 +1,6 @@
 /* Small shared UI atoms in the parchment-and-felt direction. Rendered-asset
    slots (see docs/ASSET_WISHLIST.md) fall back to emoji glyphs gracefully. */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 export const GOOD_GLYPHS: Record<string, string> = {
   grain: "🌾", wood: "🪵", wool: "🧶", fish: "🐟", ore: "⛏️", herbs: "🌿",
@@ -25,9 +25,41 @@ export function GoodIcon({ good, size = 22 }: { good: string; size?: number }) {
   return <Asset slot={`goods/${good}`} glyph={GOOD_GLYPHS[good] || "📦"} size={size} alt={good} />;
 }
 
-export function Coins({ amount }: { amount: number }) {
+/** Floating "+12 / −3" that rises off a stat chip whenever its value moves.
+    The Clash-of-Clans rule: never let a currency change silently. */
+function useDelta(value: number) {
+  const [deltas, setDeltas] = useState<{ id: number; amount: number }[]>([]);
+  const prev = useRef(value);
+  const nextId = useRef(0);
+  useEffect(() => {
+    const d = value - prev.current;
+    prev.current = value;
+    if (d === 0) return;
+    const id = nextId.current++;
+    setDeltas((ds) => [...ds, { id, amount: d }]);
+    const t = setTimeout(() =>
+      setDeltas((ds) => ds.filter((x) => x.id !== id)), 1400);
+    return () => clearTimeout(t);
+  }, [value]);
+  return deltas;
+}
+
+function DeltaFloats({ deltas }: { deltas: { id: number; amount: number }[] }) {
+  return (
+    <>
+      {deltas.map((d) => (
+        <span key={d.id} className={`stat-delta ${d.amount > 0 ? "gain" : "loss"}`}>
+          {d.amount > 0 ? "+" : "−"}{Math.abs(d.amount).toLocaleString()}
+        </span>
+      ))}
+    </>
+  );
+}
+
+export function Coins({ amount, onClick }: { amount: number; onClick?: () => void }) {
   // Count toward the new amount — money you can watch arrive.
   const [shown, setShown] = useState(amount);
+  const deltas = useDelta(amount);
   useEffect(() => {
     const from = shown;
     if (from === amount) return;
@@ -44,21 +76,36 @@ export function Coins({ amount }: { amount: number }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [amount]);
   return (
-    <span className="stat" title="coppers">
+    <span className={`stat ${onClick ? "stat-button" : ""}`} role={onClick ? "button" : undefined}
+          title="Coppers — earn them by selling; spend them on goods, buildings, and finery."
+          onClick={onClick}>
       <span className="coin" /> <b>{shown.toLocaleString()}</b>
+      <span className="stat-label">coppers</span>
+      <DeltaFloats deltas={deltas} />
     </span>
   );
 }
 
-export function EffortBar({ effort, cap = 40 }: { effort: number; cap?: number }) {
+export function EffortBar({ effort, cap = 40, onClick }: {
+  effort: number; cap?: number; onClick?: () => void;
+}) {
   const pips = Math.min(10, Math.ceil(cap / 4));
   const filled = Math.round((effort / cap) * pips);
+  const deltas = useDelta(effort);
+  const brimming = effort > cap - 20; // tomorrow's +20 would spill over the cap
   return (
-    <span className="stat" title={`${effort} effort`}>
+    <span className={`stat ${onClick ? "stat-button" : ""} ${brimming ? "stat-brimming" : ""}`}
+          role={onClick ? "button" : undefined}
+          title={brimming
+            ? `Effort ${effort}/${cap} — brimming! Anything over ${cap} at dawn is lost, so spend some today.`
+            : `Effort ${effort}/${cap} — your daily energy. +20 at dawn, up to ${cap}. Gathering, crafting, and fishing spend it.`}
+          onClick={onClick}>
       {Array.from({ length: pips }, (_, i) => (
         <span key={i} className={`effort-pip ${i < filled ? "" : "spent"}`} />
       ))}
-      <b>{effort}</b>
+      <b>{effort}<span className="stat-cap">/{cap}</span></b>
+      <span className="stat-label">effort</span>
+      <DeltaFloats deltas={deltas} />
     </span>
   );
 }

@@ -180,8 +180,10 @@ Weeks unlock on instructor pacing control (calendar default, manual advance allo
 
 ## 7. The Fun Layer
 
-1. **The Daily Ledger Puzzle** — Wordle-energy daily puzzle, same for the whole class, ~2 min. v1: "Market Mastermind" (deduce mystery price from S&D clue feedback). Shareable emoji result card; streak leaderboard.
-2. **Fishing** — timing/skill minigame at The Docks. Costs effort, yields fish + rare cosmetic trophies. On-ramp to Week 6 commons.
+1. **The Daily Ledger Puzzle** — NYT-energy daily puzzle, same for the whole class, ~2 min. v2: "Common Threads," Connections-style — 16 econ/Agora terms, four hidden groups of four, four mistakes; hand-written bank in `app/puzzles.py`; shareable emoji result card; streak leaderboard; effort reward with a flawless bonus. (v1 "Market Mastermind" price-deduction retired 2026-07: it read as homework, not play.)
+2. **Fishing** — suspense minigame at The Docks: cast, nibble fake-outs, strike, reel, reveal (named species, per-fish weights, personal bests, rare trophies). Outcomes are server-rolled at cast time; the strike timing is theater. Costs effort. On-ramp to Week 6 commons.
+2b. **The haggling caravan** — one visitor per merchant per day with a hidden reservation price and three quotes to strike a deal (surplus made visceral). Reveal their limit when the table clears; "Silver Tongue" achievement for capturing ~all of it.
+2c. **The daily streak chest** — small coin grant on the first visit of each world day, growing with consecutive days (starts on day 2; capped at 25c).
 3. **Artisan crafting** — tapestry/garment pattern designer; maker's mark; price premiums (differentiation); class gallery.
 4. **Shop & character customization** — earned prestige cosmetics + coin-priced Luxury Boutique (see DECISIONS.md #10).
 5. **Achievements & titles** — "Cloth Baron," "Master Angler," "Arbitrage Artist," "Survived the Drought."

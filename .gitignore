@@ -11,3 +11,6 @@ dist/
 .DS_Store
 scripts/raw/
 qa/shots*/
+qa/before*/
+qa/after*/
+qa/new*/

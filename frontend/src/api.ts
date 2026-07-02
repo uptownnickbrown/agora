@@ -72,13 +72,17 @@ export interface PlayerState {
            license_required: boolean; aptitude: boolean }[];
   inventory: Record<string, number>;
   facilities: { id: string; kind: string; tier: number; workers: number;
-                scrubber: boolean; name: string; output: string }[];
+                scrubber: boolean; name: string; output: string;
+                output_per_day: number; upkeep: number }[];
   open_orders: { id: string; good_id: string; side: string; qty: number;
                  remaining: number; price: number; expires_day: number }[];
-  achievements: string[];
+  achievements: { id: string; name: string; trophy: boolean }[];
   cosmetics: string[];
   loan: { outstanding: number } | null;
   nudge: string | null;
   licenses: string[];
   check_available: boolean;
+  daily_bonus: { streak: number; coins: number } | null;
+  effort_cap: number;
+  effort_per_day: number;
 }

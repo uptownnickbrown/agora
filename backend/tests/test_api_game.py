@@ -71,44 +71,80 @@ async def test_stimulus_and_scheduled_intervention(game):
     assert state["player"]["coins"] >= 250
 
 
-async def test_puzzle_full_arc(game):
+async def _todays_puzzle(game):
+    """Peek at today's answer key through the service layer (tests only)."""
+    import uuid as _uuid
+
+    from app.models import World
+    from app.services.fun import puzzle_of_the_day
+
+    async with game["session_factory"]() as db:
+        world = await db.get(World, _uuid.UUID(game["world_id"]))
+        return puzzle_of_the_day(world)
+
+
+async def test_puzzle_flawless_solve(game):
     client, wid = game["client"], game["world_id"]
     alice = game["students"][0]
     r = await client.get(f"/worlds/{wid}/puzzle", headers=hdr(alice["token"]))
-    puzzle = r.json()
-    assert puzzle["max_guesses"] == 6 and not puzzle["finished"]
-    # the heat feedback (scalding<=3, warm<=10, cold>10) makes 6 guesses enough
-    lo, hi = 10, 99
-    solved = False
-    for _ in range(6):
-        guess = (lo + hi) // 2
+    p = r.json()
+    assert len(p["terms"]) == 16
+    assert p["mistakes_left"] == 4 and not p["finished"] and p["found"] == []
+    key = await _todays_puzzle(game)
+    assert sorted(t.lower() for t in p["terms"]) == sorted(
+        t.lower() for g in key["groups"] for t in g["terms"])
+    out = None
+    for g in key["groups"]:
         r = await client.post(f"/worlds/{wid}/puzzle/guess", headers=hdr(alice["token"]),
-                              json={"guess": guess})
+                              json={"terms": g["terms"]})
+        assert r.status_code == 200, r.text
         out = r.json()
-        if out["solved"]:
-            solved = True
-            break
-        direction, heat = out["feedback"].split(":")
-        if direction == "higher":
-            lo = guess + 1
-            if heat == "scalding":
-                hi = min(hi, guess + 3)
-            elif heat == "warm":
-                lo, hi = max(lo, guess + 4), min(hi, guess + 10)
-            else:
-                lo = max(lo, guess + 11)
-        else:
-            hi = guess - 1
-            if heat == "scalding":
-                lo = max(lo, guess - 3)
-            elif heat == "warm":
-                lo, hi = max(lo, guess - 10), min(hi, guess - 4)
-            else:
-                hi = min(hi, guess - 11)
-    assert solved, "heat-guided search must crack a 10-99 secret in <=6 guesses"
+        assert out["result"] == "correct" and out["group"]["name"] == g["name"]
+    assert out["solved"] and out["finished"]
+    assert out["effort_gained"] == 3  # flawless: +2 plus the +1 bonus
     r = await client.post(f"/worlds/{wid}/puzzle/guess", headers=hdr(alice["token"]),
-                          json={"guess": 50})
+                          json={"terms": key["groups"][0]["terms"]})
     assert r.status_code == 400  # closed for the day
+    p = (await client.get(f"/worlds/{wid}/puzzle", headers=hdr(alice["token"]))).json()
+    assert p["solved"] and p["streak"] == 1 and len(p["found"]) == 4
+
+
+async def test_puzzle_mistakes_and_reveal(game):
+    client, wid = game["client"], game["world_id"]
+    bob = game["students"][1]
+    key = await _todays_puzzle(game)
+    groups = key["groups"]
+    # three from one group plus an outsider: "one away", one mistake burned
+    near_miss = groups[0]["terms"][:3] + [groups[1]["terms"][0]]
+    r = await client.post(f"/worlds/{wid}/puzzle/guess", headers=hdr(bob["token"]),
+                          json={"terms": near_miss})
+    out = r.json()
+    assert out["result"] == "one_away" and out["mistakes_left"] == 3
+    # the same wrong set again costs nothing
+    r = await client.post(f"/worlds/{wid}/puzzle/guess", headers=hdr(bob["token"]),
+                          json={"terms": near_miss})
+    assert r.json()["result"] == "already_guessed"
+    assert r.json()["mistakes_left"] == 3
+    # three more distinct wrong guesses end the day
+    for i in (1, 2, 3):
+        scrambled = [groups[j]["terms"][i] for j in range(4)]
+        r = await client.post(f"/worlds/{wid}/puzzle/guess", headers=hdr(bob["token"]),
+                              json={"terms": scrambled})
+        out = r.json()
+    assert out["finished"] and not out["solved"] and out["mistakes_left"] == 0
+    assert len(out["reveal"]) == 4
+    p = (await client.get(f"/worlds/{wid}/puzzle", headers=hdr(bob["token"]))).json()
+    assert p["finished"] and not p["solved"] and p["reveal"] is not None
+
+
+async def test_puzzle_bank_integrity():
+    from app.puzzles import PUZZLES
+
+    assert len(PUZZLES) >= 40
+    for puzzle in PUZZLES:
+        assert len(puzzle) == 4
+        terms = [t.lower() for _, ts in puzzle for t in ts]
+        assert len(terms) == 16 and len(set(terms)) == 16
 
 
 async def test_fishing_and_quota(game):
@@ -118,7 +154,16 @@ async def test_fishing_and_quota(game):
     for _ in range(5):
         r = await client.post(f"/worlds/{wid}/fishing/cast", headers=hdr(alice["token"]))
         assert r.status_code == 200
-        caught += r.json()["qty"]
+        out = r.json()
+        caught += out["qty"]
+        assert 900 <= out["bite_ms"] <= 2600 and 0 <= out["nibbles"] <= 2
+        if out["qty"]:
+            assert len(out["fish"]) == out["qty"]
+            assert sum(f["weight"] for f in out["fish"]) == out["weight"]
+            assert all(f["species"] and f["size_class"] in ("minnow", "keeper", "prize")
+                       for f in out["fish"])
+        else:
+            assert out["miss_flavor"]
     state = (await client.get(f"/worlds/{wid}/state", headers=hdr(alice["token"]))).json()
     assert state["player"]["effort"] == 20 - 15  # 5 casts * 3 effort
     assert state["inventory"].get("fish", 0) == caught
@@ -149,9 +194,90 @@ async def test_traveling_merchant(game):
     assert r.status_code == 200, r.text
     out = r.json()
     assert out["reward"] >= 20
+    assert out["best_profit"] >= out["profit"]
+    assert 0 <= out["pct_of_best"] <= 100
     r = await client.post(f"/worlds/{wid}/merchant/submit", headers=hdr(alice["token"]),
                           json={"legs": legs})
     assert r.status_code == 400  # one run only
+    r = await client.get(f"/worlds/{wid}/merchant", headers=hdr(alice["token"]))
+    assert r.json()["completed"] and r.json()["pct_of_best"] == out["pct_of_best"]
+
+
+async def _todays_haggle(game, player_id: str):
+    import uuid as _uuid
+
+    from sqlalchemy import select
+
+    from app.models import HaggleSession
+
+    async with game["session_factory"]() as db:
+        return await db.scalar(select(HaggleSession).where(
+            HaggleSession.player_id == _uuid.UUID(player_id)))
+
+
+async def test_haggle_accept_and_close(game):
+    client, wid = game["client"], game["world_id"]
+    alice = game["students"][0]
+    r = await client.get(f"/worlds/{wid}/haggle", headers=hdr(alice["token"]))
+    assert r.status_code == 200, r.text
+    deal = r.json()
+    assert deal["state"] == "open" and deal["offers_left"] == 3
+    assert deal["reservation"] is None  # hidden while the deal is open
+    assert deal["side"] == "npc_buys"  # alice holds her aptitude endowment
+    session = await _todays_haggle(game, alice["player_id"])
+    state0 = (await client.get(f"/worlds/{wid}/state", headers=hdr(alice["token"]))).json()
+    # a greedy quote gets rejected, burning one offer
+    r = await client.post(f"/worlds/{wid}/haggle/offer", headers=hdr(alice["token"]),
+                          json={"price": session.reservation * 3})
+    out = r.json()
+    assert out["result"] == "rejected" and out["offers_left"] == 2 and out["flavor"]
+    # quoting their exact ceiling closes the deal at that price
+    r = await client.post(f"/worlds/{wid}/haggle/offer", headers=hdr(alice["token"]),
+                          json={"price": session.reservation})
+    out = r.json()
+    assert out["result"] == "accepted" and out["reservation"] == session.reservation
+    assert out["left_on_table"] == 0
+    state1 = (await client.get(f"/worlds/{wid}/state", headers=hdr(alice["token"]))).json()
+    assert state1["player"]["coins"] - state0["player"]["coins"] == \
+        session.reservation * session.qty
+    assert state0["inventory"][session.good_id] - \
+        state1["inventory"].get(session.good_id, 0) == session.qty
+    assert any(a["id"] == "silver_tongue" for a in state1["achievements"])
+    r = await client.post(f"/worlds/{wid}/haggle/offer", headers=hdr(alice["token"]),
+                          json={"price": 10})
+    assert r.status_code == 400  # one visitor a day
+    deal = (await client.get(f"/worlds/{wid}/haggle", headers=hdr(alice["token"]))).json()
+    assert deal["state"] == "accepted" and deal["reservation"] == session.reservation
+
+
+async def test_haggle_walk_away(game):
+    client, wid = game["client"], game["world_id"]
+    bob = game["students"][1]
+    r = await client.get(f"/worlds/{wid}/haggle", headers=hdr(bob["token"]))
+    assert r.status_code == 200
+    r = await client.post(f"/worlds/{wid}/haggle/walk", headers=hdr(bob["token"]))
+    out = r.json()
+    assert out["result"] == "declined" and out["reservation"] > 0
+    deal = (await client.get(f"/worlds/{wid}/haggle", headers=hdr(bob["token"]))).json()
+    assert deal["state"] == "declined"
+
+
+async def test_daily_bonus_streak(game):
+    client, wid = game["client"], game["world_id"]
+    prof, alice = game["instructor"], game["students"][0]
+    # first visit of the join day: streak begins, no coins yet
+    state = (await client.get(f"/worlds/{wid}/state", headers=hdr(alice["token"]))).json()
+    assert state["daily_bonus"] is None
+    coins0 = state["player"]["coins"]
+    await client.post(f"/worlds/{wid}/instructor/close-day", headers=hdr(prof["token"]))
+    # first visit of the next day: the streak chest opens
+    state = (await client.get(f"/worlds/{wid}/state", headers=hdr(alice["token"]))).json()
+    bonus = state["daily_bonus"]
+    assert bonus and bonus["streak"] == 2 and bonus["coins"] == 11
+    assert state["player"]["coins"] == coins0 + 11
+    # only once per day
+    state = (await client.get(f"/worlds/{wid}/state", headers=hdr(alice["token"]))).json()
+    assert state["daily_bonus"] is None
 
 
 async def test_tutor_checks_update_mastery_and_gradebook(game):

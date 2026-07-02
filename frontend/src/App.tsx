@@ -165,13 +165,18 @@ function AuthScreen({ onAuthed, notify }: {
           <input placeholder="merchant name" value={name}
                  onChange={(e) => setName(e.target.value)} />
         )}
-        <input placeholder={mode === "login" ? "password (blank = magic link)"
-                                             : "password (optional)"}
+        <input placeholder={mode === "login" ? "password" : "password (optional)"}
                type="password" value={password}
-               onChange={(e) => setPassword(e.target.value)} />
+               onChange={(e) => setPassword(e.target.value)}
+               onKeyDown={(e) => e.key === "Enter" && go()} />
         <button onClick={go}>
           {mode === "register" ? "Enter the Agora" : "Sign in"}
         </button>
+        {mode === "login" && (
+          <div className="muted" style={{ textAlign: "center" }}>
+            No password? Leave it blank and we'll email you a sign-in link.
+          </div>
+        )}
       </div>
     </div>
   );
@@ -224,9 +229,13 @@ function WorldPicker({ me, onPick, onRefresh, notify }: {
       </div>
       <div className="panel">
         <h3>Instructors</h3>
-        <div className="row" style={{ alignItems: "center" }}>
-          <input value={courseTitle} onChange={(e) => setCourseTitle(e.target.value)} />
-          <input value={sectionName} onChange={(e) => setSectionName(e.target.value)} />
+        <div className="row" style={{ alignItems: "flex-end" }}>
+          <label className="muted" style={{ display: "block" }}>Course
+            <input value={courseTitle} style={{ display: "block", marginTop: 2 }}
+                   onChange={(e) => setCourseTitle(e.target.value)} /></label>
+          <label className="muted" style={{ display: "block" }}>Section
+            <input value={sectionName} style={{ display: "block", marginTop: 2 }}
+                   onChange={(e) => setSectionName(e.target.value)} /></label>
           <button className="wood" onClick={createWorld}>Create a world</button>
         </div>
         <div className="muted" style={{ marginTop: 6 }}>
@@ -249,6 +258,28 @@ const PLACES: [string, string, string][] = [
   ["boards", "Leaderboards", "🏆"],
 ];
 
+function CurrencyGuide({ effortCap, effortPerDay, onClose }: {
+  effortCap: number; effortPerDay: number; onClose: () => void;
+}) {
+  return (
+    <div className="currency-guide" onClick={(e) => e.stopPropagation()}>
+      <h4><span className="coin" /> Coppers</h4>
+      <p>Your money. Earn it by selling in the Market, stocking your shop,
+        haggling with caravans, and riding trade routes. Spend it on goods,
+        buildings, licenses, and finery. There is no cap — hoard away.</p>
+      <h4><Asset slot="ui/effort_token" glyph="●" size={18} alt="" /> Effort</h4>
+      <p>Your daily energy. You wake to +{effortPerDay} each dawn, up to a cap
+        of {effortCap}. Gathering, crafting, and casting a line all spend it.
+        Anything over {effortCap} at dawn is lost, so an idle bar is wasted
+        wealth — spend it before the day closes.</p>
+      <div style={{ textAlign: "right" }}>
+        <button className="quiet" style={{ padding: "3px 12px" }}
+                onClick={onClose}>Got it</button>
+      </div>
+    </div>
+  );
+}
+
 function GameShell({ me, wid, notify, onLeave }: {
   me: Me; wid: string; notify: (m: string, e?: boolean) => void; onLeave: () => void;
 }) {
@@ -258,6 +289,9 @@ function GameShell({ me, wid, notify, onLeave }: {
   const [state, setState] = useState<PlayerState | null>(null);
   const [isInstructorView, setInstructorViewState] = useState(initialView === "god");
   const [enrolled, setEnrolled] = useState(true);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [chest, setChest] = useState<{ streak: number; coins: number } | null>(null);
+  const [unlocked, setUnlocked] = useState<PlayerState["achievements"]>([]);
 
   const setPlace = useCallback((p: string) => {
     setPlaceState(p);
@@ -301,6 +335,38 @@ function GameShell({ me, wid, notify, onLeave }: {
     document.documentElement.style.setProperty("--smog-sat", String(sat));
   }, [state?.world.smog]);
 
+  // The daily streak chest: /state grants it exactly once per world day.
+  useEffect(() => {
+    if (!state?.daily_bonus) return;
+    setChest(state.daily_bonus);
+    const t = setTimeout(() => setChest(null), 7000);
+    return () => clearTimeout(t);
+  }, [state?.daily_bonus]);
+
+  // Celebrate achievements as they land (first load just records the past).
+  useEffect(() => {
+    if (!state) return;
+    const key = `agora_ach_${state.player.id}`;
+    const ids = state.achievements.map((a) => a.id);
+    const seenRaw = localStorage.getItem(key);
+    if (seenRaw == null) {
+      localStorage.setItem(key, JSON.stringify(ids));
+      return;
+    }
+    const seen: string[] = JSON.parse(seenRaw);
+    const fresh = state.achievements.filter((a) => !seen.includes(a.id));
+    if (fresh.length) {
+      localStorage.setItem(key, JSON.stringify(ids));
+      setUnlocked((u) => [...u, ...fresh]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state?.achievements]);
+  useEffect(() => {
+    if (!unlocked.length) return;
+    const t = setTimeout(() => setUnlocked((u) => u.slice(1)), 5000);
+    return () => clearTimeout(t);
+  }, [unlocked]);
+
   const isEpilogue = state?.world.state === "epilogue";
 
   if (!enrolled) {
@@ -329,8 +395,18 @@ function GameShell({ me, wid, notify, onLeave }: {
         {(state.world as any).demo &&
           <span className="plaque" title="A shared playground; it reseeds itself daily.">
             <Asset slot="ui/icon_flask" glyph="🧪" size={14} /> Demo world</span>}
-        <Coins amount={state.player.coins} />
-        <EffortBar effort={state.player.effort} />
+        <span style={{ position: "relative", display: "flex", gap: 12,
+                       alignItems: "center" }}>
+          <Coins amount={state.player.coins}
+                 onClick={() => setGuideOpen((g) => !g)} />
+          <EffortBar effort={state.player.effort} cap={state.effort_cap || 40}
+                     onClick={() => setGuideOpen((g) => !g)} />
+          {guideOpen && (
+            <CurrencyGuide effortCap={state.effort_cap || 40}
+                           effortPerDay={state.effort_per_day || 20}
+                           onClose={() => setGuideOpen(false)} />
+          )}
+        </span>
         {state.world.smog != null && state.world.smog > 0 &&
           <span className="plaque" title="district smog">
             <Asset slot="ui/icon_smog" glyph="🏭" size={14} /> {state.world.smog}</span>}
@@ -363,10 +439,26 @@ function GameShell({ me, wid, notify, onLeave }: {
                 <h3 style={{ marginBottom: 4 }}>
                   Welcome to the Agora, {state.player.merchant}!
                 </h3>
-                <div className="muted" style={{ marginBottom: 10 }}>
+                <div className="muted" style={{ marginBottom: 8 }}>
                   You arrive with a wagon of <b>{state.player.aptitude}</b>, your
-                  gathering specialty ⭐. Coins come from trading what you have
-                  for what the town wants.
+                  gathering specialty. Two things run your life here:
+                </div>
+                <div className="row" style={{ gap: 10, marginBottom: 10 }}>
+                  <div style={{ flex: "1 1 220px", display: "flex", gap: 8,
+                                alignItems: "flex-start" }}>
+                    <span className="coin" style={{ flex: "none", marginTop: 2 }} />
+                    <span style={{ fontSize: 13 }}>
+                      <b>Coppers</b> — your money. Sell goods to earn them;
+                      spend them on anything.</span>
+                  </div>
+                  <div style={{ flex: "1 1 220px", display: "flex", gap: 8,
+                                alignItems: "flex-start" }}>
+                    <Asset slot="ui/effort_token" glyph="●" size={18} alt=""
+                           />
+                    <span style={{ fontSize: 13 }}>
+                      <b>Effort</b> — your energy. +{state.effort_per_day || 20} at
+                      dawn, capped at {state.effort_cap || 40}. Use it or lose it.</span>
+                  </div>
                 </div>
                 <div className="row" style={{ gap: 8 }}>
                   <button onClick={() => setPlace("merchant")}>
@@ -432,6 +524,32 @@ function GameShell({ me, wid, notify, onLeave }: {
       )}
       {!isInstructorView && tour === "student" &&
         <Tour role="student" go={setPlace} onDone={endTour} />}
+      {chest && (
+        <div className="daily-chest" role="status" onClick={() => setChest(null)}>
+          <span className="coin" style={{ width: 34, height: 34 }} />
+          <div>
+            <b>{chest.streak} days running!</b>
+            <div className="muted" style={{ fontSize: 12.5 }}>
+              The Guild leaves <b>{chest.coins} coppers</b> in your till.
+              Return tomorrow and the purse grows.
+            </div>
+          </div>
+        </div>
+      )}
+      {unlocked[0] && (
+        <div className="achievement-toast" role="status"
+             onClick={() => setUnlocked((u) => u.slice(1))}>
+          <Asset slot={unlocked[0].trophy ? "ui/icon_trophy" : "ui/icon_medal"}
+                 glyph={unlocked[0].trophy ? "🏆" : "🏅"} size={38} alt="" />
+          <div>
+            <div className="kicker">
+              {unlocked[0].trophy ? "Trophy landed" : "Achievement unlocked"}
+            </div>
+            <b style={{ fontFamily: "var(--font-display)", fontSize: 16 }}>
+              {unlocked[0].name}</b>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

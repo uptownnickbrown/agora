@@ -283,19 +283,58 @@ table.book td { padding: 3.5px 8px; text-align: right; }
 .msg.tutor { align-self: flex-start; background: #fffdf6;
              border: 1px solid var(--parchment-edge); border-bottom-left-radius: 4px; }
 
-/* -- puzzle -- */
-.puzzle-grid { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
-.puzzle-row { display: flex; gap: 6px; align-items: center; }
-.puzzle-cell {
-  width: 46px; height: 46px; border-radius: 10px; border: 1.5px solid var(--parchment-edge);
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display); font-weight: 600; font-size: 19px; background: #fffdf6;
-  font-variant-numeric: tabular-nums;
+/* -- Common Threads (the daily puzzle) -- */
+.thread-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0 2px;
 }
-.puzzle-cell.cold { background: var(--sky); border-color: transparent; }
-.puzzle-cell.warm { background: #ecc473; border-color: transparent; }
-.puzzle-cell.scalding { background: var(--terracotta); color: #fff; border-color: transparent; }
-.puzzle-cell.correct { background: var(--sage-dark); color: #fff; border-color: transparent; }
+.thread-tile {
+  min-height: 56px; padding: 6px 4px;
+  background: #fffdf6; color: var(--ink);
+  border: 1.5px solid var(--parchment-edge); border-radius: 10px;
+  font-family: var(--font-body); font-weight: 700; font-size: 13px;
+  line-height: 1.15; letter-spacing: 0.01em;
+  box-shadow: 0 1px 2px rgba(18, 14, 6, 0.1);
+  transition: transform 0.1s ease, background 0.1s ease, color 0.1s ease;
+}
+.thread-tile:hover { transform: translateY(-1px); filter: none; }
+.thread-tile.picked {
+  background: var(--ink); color: var(--parchment); border-color: var(--ink);
+  transform: translateY(-2px) scale(1.03);
+}
+@keyframes tile-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+.thread-tile.shake { animation: tile-shake 0.4s ease; }
+.thread-banner {
+  border-radius: 12px; padding: 9px 12px; margin: 0 0 8px;
+  color: var(--ink); text-align: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 2px 6px rgba(18, 14, 6, 0.12);
+}
+.thread-banner b {
+  font-family: var(--font-body); font-size: 12px; font-weight: 800;
+  letter-spacing: 0.12em; text-transform: uppercase;
+}
+.thread-banner div { font-size: 13.5px; }
+.thread-banner.tier0 { background: #ecc95f; }
+.thread-banner.tier1 { background: #a8c08a; }
+.thread-banner.tier2 { background: #a3c2d4; }
+.thread-banner.tier3 { background: #c69ac9; }
+.thread-banner.missed { opacity: 0.62; }
+@keyframes banner-land {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.thread-banner.landed { animation: banner-land 0.5s ease-out; }
+.mistake-dot {
+  display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #e9b25f, var(--terracotta) 70%);
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.mistake-dot.burned { opacity: 0.18; transform: scale(0.8); }
 
 /* -- crier -- */
 .crier-post { border-bottom: 1px dashed var(--parchment-edge); padding: 10px 2px; }
@@ -338,12 +377,21 @@ table.book td { padding: 3.5px 8px; text-align: right; }
 .form-grid label { font-weight: 600; font-size: 13px; text-align: right;
                    color: var(--ink-soft); }
 
-/* -- market layout -- */
-.goods-items { display: flex; flex-direction: column; gap: 6px; }
-.goods-items .place-tile { box-shadow: none; border: 1px solid rgba(217, 203, 168, 0.45); }
-.goods-items .place-tile:hover { transform: none; box-shadow: 0 0 0 1.5px rgba(217, 169, 63, 0.5); }
-.goods-items .place-tile.active { box-shadow: 0 0 0 2px var(--gold); }
-.goods-items .place-tile img { width: 30px; height: 30px; margin: 0; }
+/* -- market layout: a horizontal rail of goods chips -- */
+.goods-items { display: flex; flex-wrap: wrap; gap: 6px; }
+.goods-items .goods-chip {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px 4px 6px; font-size: 12.5px; text-align: left;
+  box-shadow: none; border: 1px solid rgba(217, 203, 168, 0.45);
+  border-radius: 999px;
+}
+.goods-items .goods-chip:hover { transform: none; box-shadow: 0 0 0 1.5px rgba(217, 169, 63, 0.5); }
+.goods-items .goods-chip.active { box-shadow: 0 0 0 2px var(--gold); background: #fbf6e7; }
+.goods-items .goods-chip img { width: 22px; height: 22px; margin: 0; display: inline-block; }
+.goods-qty {
+  background: rgba(59, 48, 35, 0.09); border-radius: 999px;
+  padding: 0 7px; font-size: 11px; font-weight: 700;
+}
 
 /* -- the docks scene -- */
 .docks-scene {
@@ -521,6 +569,151 @@ table.book td { padding: 3.5px 8px; text-align: right; }
 .sparkline { display: block; }
 .smog-overlay { filter: saturate(var(--smog-sat, 1)); transition: filter 1s; }
 
+/* -- currency chips: labeled, clickable, never silent -- */
+.stat { position: relative; }
+.stat-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; opacity: 0.65; margin-left: 1px;
+}
+.stat-cap { font-weight: 500; opacity: 0.6; font-size: 12px; }
+.stat-button { cursor: pointer; border-radius: 999px; padding: 3px 10px;
+               transition: background 0.12s ease; }
+.stat-button:hover { background: rgba(246, 239, 221, 0.12); }
+@keyframes brim-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(217, 169, 63, 0); }
+  50% { box-shadow: 0 0 0 3px rgba(217, 169, 63, 0.4); }
+}
+.stat-brimming { animation: brim-glow 2.2s ease-in-out infinite; }
+@keyframes delta-rise {
+  0% { transform: translate(-50%, 2px); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translate(-50%, -26px); opacity: 0; }
+}
+.stat-delta {
+  position: absolute; left: 50%; top: -6px; pointer-events: none;
+  font-weight: 800; font-size: 13px; white-space: nowrap;
+  animation: delta-rise 1.4s ease-out forwards;
+  text-shadow: 0 1px 2px rgba(18, 14, 6, 0.5);
+}
+.stat-delta.gain { color: #b8e29a; }
+.stat-delta.loss { color: #f3b3bf; }
+
+/* -- the currency guide popover -- */
+.currency-guide {
+  position: absolute; top: calc(100% + 10px); left: 0; z-index: 60;
+  width: 340px; max-width: calc(100vw - 40px); text-align: left;
+  background: rgba(248, 242, 226, 0.99); color: var(--ink);
+  border: 1px solid rgba(217, 203, 168, 0.7); border-radius: 16px;
+  padding: 14px 16px; box-shadow: var(--shadow-hover);
+  animation: nudge-in 0.25s ease-out; font-weight: 400;
+}
+.currency-guide h4 { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+.currency-guide p { margin: 0 0 10px; font-size: 13px; color: var(--ink-soft); }
+
+/* -- the docks: bobber, strike, reveal -- */
+@keyframes bobber-drift {
+  0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+  50% { transform: translate(-50%, -50%) translateY(5px); }
+}
+@keyframes bobber-nibble {
+  0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+  30% { transform: translate(-50%, -50%) translateY(9px); }
+  55% { transform: translate(-50%, -50%) translateY(2px); }
+  75% { transform: translate(-50%, -50%) translateY(7px); }
+}
+.bobber {
+  position: absolute; left: 50%; top: 62%; width: 16px; height: 16px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #e8563f 48%, #fffdf6 52%);
+  border: 1.5px solid rgba(0, 0, 0, 0.35);
+  animation: bobber-drift 2s ease-in-out infinite;
+}
+.bobber.nibbling { animation: bobber-nibble 0.7s ease-in-out infinite; }
+@keyframes strike-flash {
+  0%, 100% { background: rgba(255, 255, 255, 0); }
+  40% { background: rgba(255, 244, 214, 0.4); }
+}
+.docks-scene .strike-flash {
+  position: absolute; inset: 0; pointer-events: none;
+  animation: strike-flash 0.5s ease-out 2;
+}
+@keyframes reel-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.07); }
+}
+.reel-button {
+  animation: reel-pulse 0.55s ease-in-out infinite;
+  background: var(--terracotta) !important;
+  font-size: 18px !important;
+}
+.catch-card {
+  display: inline-flex; flex-direction: column; align-items: center;
+  min-width: 88px; padding: 10px 10px 8px; margin: 4px;
+  background: #fffdf6; border: 1px solid rgba(217, 203, 168, 0.7);
+  border-radius: 12px; box-shadow: var(--shadow-soft);
+  animation: banner-land 0.45s ease-out backwards;
+}
+.catch-card .species { font-weight: 700; font-size: 12.5px; }
+.catch-card .dram { color: var(--ink-soft); font-size: 11.5px; }
+.catch-card.prize { box-shadow: 0 0 0 2px var(--gold), var(--shadow-soft); }
+.pb-banner {
+  display: inline-block; margin-top: 8px; padding: 4px 16px;
+  background: linear-gradient(180deg, #f3cf6d, var(--gold));
+  border: 1px solid #a87f22; border-radius: 999px;
+  font-weight: 800; font-size: 13px; color: var(--ink);
+  animation: banner-land 0.5s ease-out;
+}
+
+/* -- the caravan visitor (haggling) -- */
+.visitor-card {
+  display: flex; gap: 14px; align-items: flex-start;
+  background: rgba(248, 242, 226, 0.97);
+  border: 1px solid rgba(217, 203, 168, 0.55);
+  border-radius: var(--radius); box-shadow: var(--shadow-soft);
+  padding: 14px 16px; margin-bottom: 16px;
+}
+.visitor-card .portrait {
+  width: 72px; height: 72px; border-radius: 14px; overflow: hidden; flex: none;
+  background: rgba(59, 48, 35, 0.06);
+  border: 1px solid rgba(217, 203, 168, 0.7); box-shadow: var(--shadow-soft);
+}
+.visitor-card .portrait img { width: 100%; height: 100%; object-fit: cover; }
+.visitor-line {
+  background: #fffdf6; border: 1px solid var(--parchment-edge);
+  border-radius: 12px; border-top-left-radius: 4px;
+  padding: 8px 12px; font-size: 13.5px; margin: 4px 0 8px;
+}
+.offer-dot {
+  display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #cfe3b8, var(--sage) 65%);
+  border: 1px solid rgba(0, 0, 0, 0.25);
+}
+.offer-dot.spent { opacity: 0.2; }
+
+/* -- daily streak chest -- */
+.daily-chest {
+  position: fixed; left: 50%; top: 74px; transform: translateX(-50%); z-index: 80;
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(248, 242, 226, 0.99);
+  border: 1px solid rgba(217, 169, 63, 0.7); border-radius: 16px;
+  padding: 12px 20px; box-shadow: 0 18px 50px -10px rgba(10, 16, 12, 0.6);
+  animation: nudge-in 0.4s ease-out;
+}
+.daily-chest b { font-family: var(--font-display); font-size: 16px; }
+
+/* -- achievement unlocked -- */
+.achievement-toast {
+  position: fixed; left: 50%; bottom: 86px; transform: translateX(-50%); z-index: 85;
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(22, 36, 29, 0.95); color: var(--parchment);
+  border: 1px solid rgba(217, 169, 63, 0.55); border-radius: 16px;
+  padding: 12px 22px; box-shadow: 0 12px 36px -8px rgba(10, 16, 12, 0.7);
+  backdrop-filter: blur(10px);
+  animation: nudge-in 0.35s ease-out;
+}
+.achievement-toast .kicker { color: var(--gold); }
+
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: rgba(246, 239, 221, 0.25); border-radius: 999px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -531,6 +724,11 @@ table.book td { padding: 3.5px 8px; text-align: right; }
   .shell { padding: 10px 10px 120px; }
   .topbar { top: 6px; gap: 8px; padding: 8px 12px; }
   .topbar .banner { font-size: 13px; padding: 2px 10px; }
+  /* tight quarters: numbers and tooltips carry the labels */
+  .stat-label { display: none; }
+  .effort-pip { width: 10px; height: 10px; }
+  .currency-guide { position: fixed; left: 12px; right: 12px; top: 64px;
+                    width: auto; }
   /* places become an app-style bottom dock: dark glass, swipeable */
   .places {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
@@ -553,11 +751,9 @@ table.book td { padding: 3.5px 8px; text-align: right; }
     box-shadow: inset 0 0 0 1.5px var(--gold);
     color: var(--parchment); border-radius: 12px;
   }
-  /* market: goods list flips to a horizontal rail; trading stays on top */
-  .goods-panel { flex: 1 1 100% !important; order: 0; padding: 10px;
-                 min-width: 0; max-width: 100%; }
-  .goods-items { flex-direction: row; overflow-x: auto; padding-bottom: 6px; }
-  .goods-items .place-tile { flex: 0 0 auto; min-width: 92px; }
+  /* market: goods chips collapse to one swipeable row */
+  .goods-panel { padding: 8px 10px; }
+  .goods-items { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
   .market-main { order: 1; flex: 1 1 100%; }
   .market-side { order: 2; flex: 1 1 100%; }
   .crier-feature .art { width: 92px; min-width: 92px; }

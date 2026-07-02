@@ -219,33 +219,32 @@ async def bot_day(db: AsyncSession, world: World, bot: Bot, day: int, week: int)
                 await _try(fun_svc.buy_cosmetic(db, world, player, cid))
                 break
 
-    # everyone occasionally hits the puzzle for streaks
+    # everyone occasionally plays the daily puzzle for streaks
     if rng.random() < 0.6:
         state = await fun_svc.get_puzzle_state(db, world, player)
         if not state["finished"]:
-            lo, hi = 10, 99
-            for _ in range(6):
-                g = (lo + hi) // 2
-                out = await fun_svc.guess_puzzle(db, world, player, g)
-                if out["solved"] or out["finished"]:
-                    break
-                direction, heat = out["feedback"].split(":")
-                if direction == "higher":
-                    lo = g + 1
-                    if heat == "scalding":
-                        hi = min(hi, g + 3)
-                    elif heat == "warm":
-                        lo, hi = max(lo, g + 4), min(hi, g + 10)
-                    else:
-                        lo = max(lo, g + 11)
-                else:
-                    hi = g - 1
-                    if heat == "scalding":
-                        lo = max(lo, g - 3)
-                    elif heat == "warm":
-                        lo, hi = max(lo, g - 10), min(hi, g - 4)
-                    else:
-                        hi = min(hi, g - 11)
+            groups = fun_svc.puzzle_of_the_day(world)["groups"]
+            plan = rng.choice([0, 0, 0, 1, 1, 2, 9])  # 9 = a bad day (fail out)
+            if plan >= 4:
+                for i in range(4):  # one term from each group: always wrong
+                    wrong = [groups[j]["terms"][i] for j in range(4)]
+                    out = await fun_svc.guess_puzzle(db, world, player, wrong)
+                    if out["finished"]:
+                        break
+            else:
+                finished = False
+                for i in range(plan):  # a few near-misses for flavor
+                    near = groups[i]["terms"][:3] + [groups[i + 1]["terms"][i]]
+                    out = await fun_svc.guess_puzzle(db, world, player, near)
+                    if out["finished"]:
+                        finished = True
+                        break
+                if not finished:
+                    for g in groups:
+                        out = await fun_svc.guess_puzzle(db, world, player,
+                                                         list(g["terms"]))
+                        if out["finished"]:
+                            break
 
 
 async def _count_license_holders(db: AsyncSession, world: World) -> int:

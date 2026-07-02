@@ -18,7 +18,7 @@ from ..models import (
     Streak,
     World,
 )
-from ..services.fun import ACHIEVEMENTS
+from ..services.fun import achievement_name
 from .bank import LEARNING_OBJECTIVES
 
 
@@ -109,7 +109,8 @@ async def your_economic_story(db: AsyncSession, world: World, player: Player) ->
         "chapters": chapters,
         "achievements": [
             {"id": a.achievement_id,
-             "name": ACHIEVEMENTS.get(a.achievement_id, a.achievement_id),
+             "name": achievement_name(a.achievement_id),
+             "trophy": a.achievement_id.startswith("trophy:"),
              "day": a.world_day}
             for a in achievements
         ],

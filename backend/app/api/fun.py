@@ -15,12 +15,12 @@ async def puzzle(db: DB, world: WorldDep, player: CurrentPlayer):
 
 
 class GuessIn(BaseModel):
-    guess: int = Field(ge=10, le=99)
+    terms: list[str] = Field(min_length=4, max_length=4)
 
 
 @router.post("/worlds/{world_id}/puzzle/guess")
 async def guess(body: GuessIn, db: DB, world: WorldDep, player: CurrentPlayer):
-    return await fun_svc.guess_puzzle(db, world, player, body.guess)
+    return await fun_svc.guess_puzzle(db, world, player, body.terms)
 
 
 @router.post("/worlds/{world_id}/fishing/cast")
@@ -40,6 +40,25 @@ class MerchantIn(BaseModel):
 @router.post("/worlds/{world_id}/merchant/submit")
 async def merchant_submit(body: MerchantIn, db: DB, world: WorldDep, player: CurrentPlayer):
     return await fun_svc.merchant_submit(db, world, player, body.legs)
+
+
+@router.get("/worlds/{world_id}/haggle")
+async def haggle(db: DB, world: WorldDep, player: CurrentPlayer):
+    return await fun_svc.haggle_state(db, world, player)
+
+
+class OfferIn(BaseModel):
+    price: int = Field(gt=0, le=100_000)
+
+
+@router.post("/worlds/{world_id}/haggle/offer")
+async def haggle_offer(body: OfferIn, db: DB, world: WorldDep, player: CurrentPlayer):
+    return await fun_svc.haggle_offer(db, world, player, body.price)
+
+
+@router.post("/worlds/{world_id}/haggle/walk")
+async def haggle_walk(db: DB, world: WorldDep, player: CurrentPlayer):
+    return await fun_svc.haggle_walk(db, world, player)
 
 
 @router.get("/worlds/{world_id}/boutique")

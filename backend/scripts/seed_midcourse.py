@@ -76,7 +76,7 @@ async def main(days: int, suffix: str, demo: bool = False) -> None:
             except GameError:
                 sys.exit(
                     f"{tag}.instructor@agora-u.edu already exists — rerun with "
-                    f"--suffix {int(suffix or 1) + 1} (or wipe the DB volume)."
+                    f"a different --suffix (or wipe the DB volume)."
                 )
             prof.is_instructor = True
             world = await worlds_svc.create_world(

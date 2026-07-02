@@ -402,6 +402,27 @@ class FishingCatch(TimestampMixin, Base):
     trophy: Mapped[str | None] = mapped_column(String(60))
 
 
+class HaggleSession(Base):
+    """One caravan visitor per merchant per day: a hidden reservation price,
+    up to three quotes, and a lesson about surplus either way."""
+
+    __tablename__ = "haggle_sessions"
+    __table_args__ = (UniqueConstraint("world_id", "player_id", "world_day"),)
+    id: Mapped[uuid.UUID] = uuid_pk()
+    world_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("worlds.id"), index=True)
+    player_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("players.id"), index=True)
+    world_day: Mapped[int] = mapped_column(Integer)
+    good_id: Mapped[str] = mapped_column(String(24))
+    side: Mapped[str] = mapped_column(String(12))  # npc_buys | npc_sells
+    qty: Mapped[int] = mapped_column(Integer)
+    reservation: Mapped[int] = mapped_column(Integer)
+    visitor: Mapped[str] = mapped_column(String(60))
+    portrait: Mapped[str] = mapped_column(String(24))
+    offers: Mapped[list] = mapped_column(JSON, default=list)
+    state: Mapped[str] = mapped_column(String(12), default="open")
+    accepted_price: Mapped[int | None] = mapped_column(Integer)
+
+
 class Streak(Base):
     __tablename__ = "streaks"
     __table_args__ = (UniqueConstraint("player_id", "kind"),)

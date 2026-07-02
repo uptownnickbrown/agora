@@ -131,7 +131,9 @@ async def test_facility_production_at_close(game):
 
     state = (await client.get(f"/worlds/{wid}/state", headers=hdr(alice["token"]))).json()
     assert state["inventory"].get("grain", 0) == grain_before + 4  # tier 1 output
-    assert state["player"]["coins"] == coins_before - 4  # upkeep
+    # upkeep of 4, plus the day-2 streak chest (11) this state fetch opened
+    assert state["daily_bonus"]["coins"] == 11
+    assert state["player"]["coins"] == coins_before - 4 + 11
 
 
 async def test_shop_retail_demand(game):

@@ -50,7 +50,7 @@ async def join(body: JoinIn, db: DB, user: CurrentUser):
 
 @router.get("/worlds/{world_id}/state")
 async def world_state(db: DB, world: WorldDep, player: CurrentPlayer):
-    await fun_svc.login_streak(db, world, player)
+    daily_bonus = await fun_svc.login_streak(db, world, player)
     invs = (
         await db.scalars(
             select(Inventory).where(Inventory.world_id == world.id,
@@ -115,16 +115,27 @@ async def world_state(db: DB, world: WorldDep, player: CurrentPlayer):
         "facilities": [{"id": str(f.id), "kind": f.kind, "tier": f.tier,
                         "workers": f.workers, "scrubber": f.scrubber,
                         "name": T.FACILITIES[f.kind].name,
-                        "output": T.FACILITIES[f.kind].output} for f in facilities],
+                        "output": T.FACILITIES[f.kind].output,
+                        "output_per_day": T.FACILITIES[f.kind].output_per_day[
+                            min(f.tier, T.FACILITIES[f.kind].max_tier) - 1],
+                        "upkeep": T.FACILITIES[f.kind].upkeep[
+                            min(f.tier, T.FACILITIES[f.kind].max_tier) - 1]}
+                       for f in facilities],
         "open_orders": [{"id": str(o.id), "good_id": o.good_id, "side": o.side,
                          "qty": o.qty, "remaining": o.remaining, "price": o.price,
                          "expires_day": o.expires_day} for o in orders],
-        "achievements": [a.achievement_id for a in achievements],
+        "achievements": [{"id": a.achievement_id,
+                          "name": fun_svc.achievement_name(a.achievement_id),
+                          "trophy": a.achievement_id.startswith("trophy:")}
+                         for a in achievements],
         "cosmetics": [c.cosmetic_id for c in cosmetics],
         "loan": {"outstanding": loan.outstanding} if loan else None,
         "nudge": nudge,
         "licenses": sorted({l.good_id for l in licenses}),
         "check_available": check is not None,
+        "daily_bonus": daily_bonus,
+        "effort_cap": T.BALANCE["effort_cap"],
+        "effort_per_day": T.BALANCE["effort_per_day"],
     }
 
 

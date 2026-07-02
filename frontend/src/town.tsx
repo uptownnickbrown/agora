@@ -1,7 +1,7 @@
 /* The Crier, the Guild Hall, leaderboards, the Traveling Merchant, the recap. */
 import React, { useCallback, useEffect, useState } from "react";
 import { api, PlayerState } from "./api";
-import { Asset, Coins, GoodIcon, Sparkline } from "./ui";
+import { Asset, Coins, Confetti, GoodIcon, Sparkline } from "./ui";
 
 type Notify = (msg: string, error?: boolean) => void;
 
@@ -249,10 +249,15 @@ export function GuildHall({ state, wid, notify, refresh }: {
         <div className="muted">Visible terms. Zero enforcement. What could go wrong?</div>
         {compacts.map((c) => (
           <div key={c.id} className="panel" style={{ padding: 10, marginTop: 8 }}>
-            <b>{c.name}</b> <span className="tag">{c.kind}</span>
+            <b>{c.name}</b> <span className="tag">{c.kind.replace(/_/g, " ")}</span>
             {c.dissolved_day != null && <span className="tag">dissolved</span>}
-            <div className="muted">terms: {JSON.stringify(c.terms)}</div>
-            <div className="muted">signatories: {c.members.join(", ") || "none"}</div>
+            <div className="muted">Terms: {
+              c.terms?.good && c.terms?.price != null
+                ? <>hold {c.terms.good} at {c.terms.price}c</>
+                : Object.entries(c.terms || {})
+                    .map(([k, v]) => `${k.replace(/_/g, " ")}: ${v}`).join(" · ")
+            }</div>
+            <div className="muted">Signatories: {c.members.join(", ") || "none"}</div>
             <div className="row" style={{ marginTop: 6 }}>
               <button className="quiet" onClick={() => act(
                 () => api.post(`/worlds/${wid}/compacts/${c.id}/join`), "Signed.")}>
@@ -324,11 +329,33 @@ export function Merchant({ wid, notify, refresh }: {
 
   if (!inst) return <div className="panel">The merchant readies the cart…</div>;
   if (inst.completed) {
+    const pct = inst.pct_of_best ?? 0;
     return (
-      <div className="panel" style={{ textAlign: "center" }}>
+      <div className="panel" style={{ textAlign: "center", maxWidth: 560,
+                                      margin: "0 auto" }}>
         <h3><Asset slot="ui/icon_camel" glyph="🐫" size={20} /> The Traveling Merchant</h3>
-        <p>You completed the route with a profit of <b>{inst.profit}</b> coppers.
-          The merchant tips his hat and moves on.</p>
+        {pct >= 80 && <Confetti />}
+        <p style={{ fontSize: 16 }}>
+          Route complete: <b>{inst.profit > 0 ? "+" : ""}{inst.profit}</b> coppers
+          of trading profit.
+        </p>
+        {inst.best_profit != null && (
+          <>
+            <div className="meter" style={{ maxWidth: 320, margin: "0 auto 6px" }}>
+              <span style={{ width: `${Math.max(3, Math.min(100, pct))}%` }} />
+            </div>
+            <div style={{ marginBottom: 8 }}>
+              You found <b>{pct}%</b> of the best possible route
+              <span className="muted"> (a perfect run earns {inst.best_profit})</span>.
+            </div>
+          </>
+        )}
+        <div className="muted" style={{ fontStyle: "italic" }}>
+          {pct >= 100 ? "Flawless. The merchant quietly asks if YOU are hiring."
+            : pct >= 80 ? "The merchant tips his hat, impressed."
+            : pct >= 50 ? "A respectable run. The merchant hums a haggler's tune."
+            : "The merchant tips his hat and doesn't mention the rest. Buy low, sell high — the gap is the whole game."}
+        </div>
       </div>
     );
   }
@@ -362,7 +389,8 @@ export function Merchant({ wid, notify, refresh }: {
     try {
       const out = await api.post(`/worlds/${wid}/merchant/submit`, { legs });
       notify(`Route complete! Profit ${out.profit}, reward ${out.reward} coppers.`);
-      setInst({ ...inst, completed: true, profit: out.profit });
+      setInst({ ...inst, completed: true, profit: out.profit,
+                best_profit: out.best_profit, pct_of_best: out.pct_of_best });
       refresh();
     } catch (e: any) { notify(e.message, true); }
   }
@@ -413,12 +441,13 @@ export function Merchant({ wid, notify, refresh }: {
       </div>
       <div className="row" style={{ alignItems: "center", marginTop: 12 }}>
         <button onClick={submit} disabled={overloaded}>Ride the route</button>
-        <span className={projected > 0 ? "heat-good" : projected < 0 ? "heat-bad" : "muted"}
+        <span className={overloaded || projected < 0 ? "heat-bad"
+                : projected > 0 ? "heat-good" : "muted"}
               style={{ fontSize: 15 }}>
-          {overloaded ? "⚠️ a camel can only carry so much"
+          {overloaded ? "A camel can only carry so much — lighten the load."
             : projected !== 0
-              ? `projected profit: ${projected > 0 ? "+" : ""}${projected} coppers`
-              : "plan your cargo: buy where it's cheap, and it sells at the next stop"}
+              ? `Projected profit: ${projected > 0 ? "+" : ""}${projected} coppers`
+              : "Plan your cargo: buy where it's cheap, and it sells at the next stop."}
         </span>
       </div>
     </div>
@@ -460,10 +489,8 @@ export function Recap({ wid }: { wid: string }) {
       <h3 style={{ marginTop: 12 }}>Honors</h3>
       {recap.achievements.map((a: any) => (
         <span key={a.id} className="tag">
-          {String(a.name).startsWith("trophy:")
-            ? <><Asset slot="ui/icon_trophy" glyph="🎣" size={13} />{" "}
-                {String(a.name).slice(7)}</>
-            : <><Asset slot="ui/icon_medal" glyph="🏅" size={13} /> {a.name}</>}
+          <Asset slot={a.trophy ? "ui/icon_trophy" : "ui/icon_medal"}
+                 glyph={a.trophy ? "🎣" : "🏅"} size={13} /> {a.name}
         </span>
       ))}
       <div className="muted" style={{ marginTop: 14, textAlign: "center",
