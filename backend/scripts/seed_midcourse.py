@@ -40,6 +40,12 @@ from tests.bots import PERSONAS, Bot, bot_day, form_cartel
 CHECK_SKILL = {"trader": 0.85, "producer": 0.8, "angler": 0.6,
                "tycoon": 0.75, "cartelist": 0.5}
 
+# Seeded classmates read like a roster, not a bot farm — index-aligned with
+# PERSONAS (Maya T. is the trader, Jordan P. the producer, and so on).
+STUDENT_NAMES = ["Maya T.", "Jordan P.", "Sam K.", "Priya N.", "Diego R.",
+                 "Amara O.", "Ethan L.", "Zoe W.", "Marcus J.", "Lena F.",
+                 "Omar H.", "Grace C."]
+
 
 async def bot_tutor_check(db, world, bot: Bot) -> None:
     """Answer today's contextual check if it's an MCQ (free-response would
@@ -90,7 +96,7 @@ async def main(days: int, suffix: str, demo: bool = False) -> None:
             for i, persona in enumerate(PERSONAS):
                 u = await auth_svc.register(
                     db, f"{tag}.student{i:02d}@agora-u.edu",
-                    f"{persona.title()} {i}", PASSWORD,
+                    STUDENT_NAMES[i % len(STUDENT_NAMES)], PASSWORD,
                 )
                 player = await worlds_svc.join_world(db, u, join_code)
                 bots.append(Bot(player_id=player.id, persona=persona,

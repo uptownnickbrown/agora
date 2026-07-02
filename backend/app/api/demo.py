@@ -19,6 +19,12 @@ from ..models import World
 from ..services import auth as auth_svc
 from ..services import worlds as worlds_svc
 
+VISITOR_FIRST_NAMES = [
+    "Alex", "Bea", "Casey", "Dana", "Eli", "Farah", "Gus", "Hana", "Ira",
+    "Jules", "Kai", "Lior", "Mika", "Nadia", "Owen", "Pia", "Quinn", "Rowan",
+    "Sana", "Theo", "Uma", "Vera", "Wren", "Yara",
+]
+
 router = APIRouter(prefix="/demo", tags=["demo"])
 
 
@@ -44,14 +50,16 @@ async def _demo_world(db) -> World:
 async def demo_student(db: DB):
     _guard()
     world = await _demo_world(db)
-    # Two visitors clicking at the same instant get distinct merchants; on an
-    # astronomically unlucky handle collision we just roll again.
+    # Every visitor becomes a named merchant — "Nadia R." beats "Visitor 7F2C"
+    # for feeling like a classmate. Emails stay unique; name collisions in a
+    # shared playground are just two Rowans at the same college.
     for _ in range(3):
         handle = secrets.token_hex(4)
+        name = (f"{secrets.choice(VISITOR_FIRST_NAMES)} "
+                f"{secrets.choice('ABCDEFGHJKLMNPRSTVW')}.")
         try:
             user = await auth_svc.register(
-                db, f"visitor.{handle}@agora-demo.org",
-                f"Visitor {handle[:4].upper()}")
+                db, f"visitor.{handle}@agora-demo.org", name)
             break
         except Exception:
             continue
