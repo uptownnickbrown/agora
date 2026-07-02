@@ -486,8 +486,10 @@ function Heatmap({ wid }: { wid: string }) {
     data.los.every((lo: any) => s.scores[lo.id] == null));
   const color = (pct: number | null) =>
     pct == null ? "#eee" : pct > 70 ? "var(--sage)" : pct > 40 ? "#ecc473" : "var(--terracotta)";
-  // "ch2-opportunity-cost" -> "Opportunity cost"
-  const loLabel = (id: string) => titleize(id.replace(/^ch\d+-/, "").replace(/-/g, "_"));
+  // Compact label served by the API; the full Bloom-aligned statement lives
+  // in the tooltip (and in the students' Study).
+  const loLabel = (lo: any) => lo.short
+    || titleize(lo.id.replace(/^ch\d+-/, "").replace(/-/g, "_"));
   const legend = (
     <div className="row" style={{ gap: 14, margin: "2px 0 10px", fontSize: 12 }}>
       {[["var(--sage)", "Above 70%: mastered"],
@@ -524,7 +526,7 @@ function Heatmap({ wid }: { wid: string }) {
           <tr>
             <th style={{ textAlign: "left", padding: 4, verticalAlign: "bottom" }}>Student</th>
             {data.los.map((lo: any) => (
-              <th key={lo.id} title={lo.text}
+              <th key={lo.id} title={`${lo.bloom ? `[${lo.bloom}] ` : ""}${lo.text}`}
                   style={{ padding: "4px 2px", verticalAlign: "bottom",
                            fontSize: 10, fontWeight: 500 }}>
                 <div style={{ writingMode: "vertical-rl",
@@ -532,7 +534,7 @@ function Heatmap({ wid }: { wid: string }) {
                               height: 130, overflow: "hidden",
                               textOverflow: "ellipsis", whiteSpace: "nowrap",
                               margin: "0 auto" }}>
-                  {loLabel(lo.id)}
+                  {loLabel(lo)}
                 </div>
               </th>
             ))}

@@ -64,7 +64,8 @@ async def my_mastery(db: DB, world: WorldDep, player: CurrentPlayer):
     ).all()
     by_lo = {m.lo_id: m for m in rows}
     return [
-        {"lo_id": lo.id, "text": lo.text, "week": lo.week,
+        {"lo_id": lo.id, "text": lo.text, "short": lo.short, "bloom": lo.bloom,
+         "week": lo.week,
          "pct": round(by_lo[lo.id].score / 10) if lo.id in by_lo else None,
          "attempts": by_lo[lo.id].attempts if lo.id in by_lo else 0}
         for lo in LEARNING_OBJECTIVES.values() if lo.week <= world.current_week

@@ -515,6 +515,13 @@ table.book td { padding: 3.5px 8px; text-align: right; }
   font-variant-numeric: tabular-nums;
 }
 .mastery-row .lo-practice { padding: 3px 12px; font-size: 12px; flex: none; }
+.bloom-chip {
+  display: inline-block; padding: 0 7px; margin-right: 2px;
+  background: rgba(59, 48, 35, 0.07); border: 1px solid rgba(217, 203, 168, 0.8);
+  border-radius: 999px; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft);
+  vertical-align: 1px;
+}
 .check-choice { text-align: left; }
 
 /* -- pip label under the closed dock -- */

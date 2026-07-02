@@ -470,6 +470,23 @@ class MerchantRun(Base):
 
 # -- pedagogy --------------------------------------------------------------------
 
+class GeneratedQuestion(TimestampMixin, Base):
+    """A practice question Pip wrote on the fly (LLM), grounded in one
+    learning objective and the OpenStax chapter text. Kept so grading and
+    review are reproducible after the fact."""
+
+    __tablename__ = "generated_questions"
+    id: Mapped[uuid.UUID] = uuid_pk()
+    world_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("worlds.id"), index=True)
+    player_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("players.id"), index=True)
+    lo_id: Mapped[str] = mapped_column(String(40), index=True)
+    world_day: Mapped[int] = mapped_column(Integer)
+    prompt: Mapped[str] = mapped_column(Text)
+    choices: Mapped[list] = mapped_column(JSON)
+    answer: Mapped[int] = mapped_column(Integer)
+    explanation: Mapped[str] = mapped_column(Text, default="")
+
+
 class CheckAttempt(TimestampMixin, Base):
     __tablename__ = "check_attempts"
     id: Mapped[uuid.UUID] = uuid_pk()

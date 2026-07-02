@@ -16,6 +16,7 @@ from ..config import get_settings
 from ..models import (
     CheckAttempt,
     EconEvent,
+    GeneratedQuestion,
     Inventory,
     MasteryEstimate,
     Player,
@@ -25,6 +26,7 @@ from ..models import (
 )
 from ..services.common import GameError, emit
 from .bank import LEARNING_OBJECTIVES, QUESTIONS, questions_for_context, questions_for_week
+from .openstax import CHAPTER_SUMMARIES
 
 PIP_SYSTEM = """You are Professor Pip, a know-it-all market pigeon who tutors \
 students inside Agora, a multiplayer economic simulation for an intro \
@@ -43,6 +45,44 @@ market.
 interventions.
 - If asked about non-economics topics, redirect kindly: "ask your professor — \
 and what a fine question to ask."
+"""
+
+# How the game actually works — so "how do I fish?" gets a right answer, not a
+# vibe. Lives in the cached system prompt; keep it accurate when mechanics
+# change (template.py is the source of truth for numbers).
+GAME_GUIDE = """
+HOW AGORA WORKS (answer mechanics questions from this, precisely):
+- Two meters. Coppers: money, earned by selling, no cap. Effort: energy — +20 \
+at dawn up to a cap of 40; anything over the cap at dawn is lost. Gathering \
+(1 effort per unit, 3x yield for your starred specialty), hand-crafting \
+(2-4 effort per recipe), and fishing (3 effort per cast) all spend effort.
+- Market Square: an order book per good. A Bid buys, an Ask sells; leaving \
+price blank places a market order that fills now or not at all. Coins are \
+escrowed when a buy order posts; unfilled orders expire after 2 days. The \
+price chart shows real daily closes from actual trades.
+- Your Shop: stock shelves with a price; townsfolk browse and buy overnight. \
+The morning shows what sold — your own little demand curve.
+- Workshop: gather raw goods, craft them into finer ones (2 grain -> flour, \
+2 flour -> bread, and so on), or spend 120 coppers to build a facility that \
+produces every night but owes nightly upkeep. Facilities upgrade in tiers, \
+hire workers (diminishing returns), and can fit smoke scrubbers.
+- The Docks: cast (3 effort), wait for the strike, reel in. Catches scale \
+with the shared fish stock — the fishery is an open-access commons and CAN \
+collapse. Royal quotas or closures may apply. Rare trophy fish exist.
+- Daily Ledger: "Common Threads," a daily 16-tile group-finding puzzle, the \
+same board for the whole class. Solving pays +2 effort (+1 more flawless).
+- The Study: shows your mastery meter for every learning objective; practice \
+any of them with me. Your first correct answer each day earns +2 effort.
+- The caravan visitor (Market Square): one haggle a day — quote a per-unit \
+price, three tries before they walk. Their hidden limit is revealed after.
+- Guild Hall: sealed-bid license auctions (announced in the Crier), compacts \
+(price agreements with zero enforcement), a fresh-start loan if you're under \
+30 coppers, and the Luxury Boutique for cosmetics.
+- The Crier: nightly market report and news of festivals, droughts, decrees.
+- Streaks: solving the puzzle daily builds a streak; visiting daily builds a \
+login streak that pays a small morning coin bonus from day two.
+- Grades come from participation and demonstrated mastery (tutor checks), \
+NEVER from wealth. Leaderboards are for bragging only.
 """
 
 DAILY_TOKEN_BUDGET = 60_000  # per World per day, rough cost ceiling
@@ -175,12 +215,24 @@ async def _llm_reply(db: AsyncSession, world: World, player: Player, message: st
     if not messages or messages[-1]["role"] != "user":
         messages.append({"role": "user", "content": message})
     messages[-1] = {"role": "user", "content": f"{context}\n\n{message}"}
+    # This week's textbook chapters ride along as a second cached block, so
+    # content questions get grounded answers, not paraphrase drift.
+    chapters = sorted({lo.chapter for lo in LEARNING_OBJECTIVES.values()
+                       if lo.week == world.current_week})
+    excerpt = "\n\n".join(
+        f"[OpenStax ch.{ch} key concepts]\n{CHAPTER_SUMMARIES.get(ch, '')[:2200]}"
+        for ch in chapters)
+    system = [{"type": "text", "text": PIP_SYSTEM + GAME_GUIDE,
+               "cache_control": {"type": "ephemeral"}}]
+    if excerpt:
+        system.append({"type": "text",
+                       "text": "THIS WEEK'S TEXTBOOK REFERENCE:\n" + excerpt,
+                       "cache_control": {"type": "ephemeral"}})
     try:
         response = await client.messages.create(
             model=get_settings().model_tutor,
             max_tokens=400,
-            system=[{"type": "text", "text": PIP_SYSTEM,
-                     "cache_control": {"type": "ephemeral"}}],
+            system=system,
             messages=messages,
         )
         _record_usage(world, response.usage.input_tokens + response.usage.output_tokens)
@@ -219,7 +271,15 @@ async def next_check(db: AsyncSession, world: World, player: Player,
                    if lo_id in q.los and q.week <= world.current_week]
         if not lo_pool:
             return None
-        pool = [q for q in lo_pool if q.id not in answered] or lo_pool
+        fresh = [q for q in lo_pool if q.id not in answered]
+        if not fresh:
+            # The hand-written pool is spent: Pip writes a new one, grounded
+            # in the objective and the textbook. Falls back to repeats.
+            generated = await _generate_practice_question(
+                db, world, player, LEARNING_OBJECTIVES[lo_id])
+            if generated:
+                return generated
+        pool = fresh or lo_pool
         rng = random.Random(f"practice:{player.id}:{lo_id}:{attempts}")
         q = rng.choice(pool)
         return _check_payload(q)
@@ -264,11 +324,127 @@ def _check_payload(q) -> dict:
         "los": [LEARNING_OBJECTIVES[lo].text for lo in q.los],
         "lo_ids": list(q.los),
         "diagram": q.diagram,
+        "generated": False,
+    }
+
+
+# -- Pip writes questions on the fly ------------------------------------------------
+
+GENERATED_PER_PLAYER_PER_DAY = 10
+
+GENERATE_SYSTEM = """You write one multiple-choice practice question for Agora, \
+a pre-industrial market-town game teaching intro microeconomics. The question \
+must assess EXACTLY the given learning objective at its Bloom level, and be \
+answerable from the textbook excerpt provided (OpenStax Principles of \
+Microeconomics 3e). Ground numbers and scenarios in the game's world when \
+natural (coppers for money; goods like grain, wool, cloth, bread, tools, \
+glowdye; the Crier newspaper; the Crown; effort as daily energy) — but never \
+invent game rules beyond that flavor.
+
+Requirements:
+- One clear stem. Small, computable numbers if any. No trick wording.
+- Exactly four answer choices. Exactly one is defensibly correct.
+- Each wrong choice reflects a real, named student misconception — not filler.
+- Do not reuse or lightly rephrase any question listed under AVOID.
+- explanation: one warm sentence in the voice of a tutor pigeon, explaining
+  why the right answer is right.
+
+Reply with ONLY a JSON object, no code fences, no prose:
+{"prompt": "...", "choices": ["...","...","...","..."], "answer": 0, "explanation": "..."}"""
+
+
+def _parse_generated(text: str) -> dict | None:
+    import json
+
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end <= start:
+        return None
+    try:
+        data = json.loads(text[start:end + 1])
+    except ValueError:
+        return None
+    prompt = str(data.get("prompt", "")).strip()
+    choices = data.get("choices")
+    answer = data.get("answer")
+    explanation = str(data.get("explanation", "")).strip()
+    if not prompt or len(prompt) > 700:
+        return None
+    if not isinstance(choices, list) or len(choices) != 4:
+        return None
+    choices = [str(c).strip() for c in choices]
+    if any(not c or len(c) > 300 for c in choices) or len(set(choices)) != 4:
+        return None
+    if not isinstance(answer, int) or not 0 <= answer <= 3:
+        return None
+    return {"prompt": prompt, "choices": choices, "answer": answer,
+            "explanation": explanation[:500]}
+
+
+async def _generate_practice_question(db: AsyncSession, world: World,
+                                      player: Player, lo) -> dict | None:
+    client = _client()
+    if client is None or _budget_remaining(world) <= 0:
+        return None
+    today_count = await db.scalar(
+        select(func.count()).select_from(GeneratedQuestion).where(
+            GeneratedQuestion.player_id == player.id,
+            GeneratedQuestion.world_day == world.world_day,
+        )
+    )
+    if today_count >= GENERATED_PER_PLAYER_PER_DAY:
+        return None
+    prior = (
+        await db.scalars(
+            select(GeneratedQuestion).where(
+                GeneratedQuestion.player_id == player.id,
+                GeneratedQuestion.lo_id == lo.id,
+            ).order_by(GeneratedQuestion.created_at.desc()).limit(6)
+        )
+    ).all()
+    avoid = [q.prompt for q in QUESTIONS.values() if lo.id in q.los]
+    avoid += [g.prompt for g in prior]
+    avoid_txt = "\n".join(f"- {p}" for p in avoid[:18])
+    excerpt = CHAPTER_SUMMARIES.get(lo.chapter, "")[:4500]
+    user = (
+        f"LEARNING OBJECTIVE ({lo.id}, Bloom: {lo.bloom}, course week {lo.week}):\n"
+        f"{lo.text}\n\n"
+        f"TEXTBOOK EXCERPT (chapter {lo.chapter} key concepts):\n{excerpt}\n\n"
+        f"AVOID (existing questions on this objective):\n{avoid_txt}\n\n"
+        f"Write the question now."
+    )
+    try:
+        response = await client.messages.create(
+            model=get_settings().model_tutor,
+            max_tokens=700,
+            system=[{"type": "text", "text": GENERATE_SYSTEM,
+                     "cache_control": {"type": "ephemeral"}}],
+            messages=[{"role": "user", "content": user}],
+        )
+        _record_usage(world, response.usage.input_tokens + response.usage.output_tokens)
+        text = next((b.text for b in response.content if b.type == "text"), "")
+    except Exception:
+        return None
+    parsed = _parse_generated(text)
+    if parsed is None:
+        return None
+    row = GeneratedQuestion(world_id=world.id, player_id=player.id, lo_id=lo.id,
+                            world_day=world.world_day, prompt=parsed["prompt"],
+                            choices=parsed["choices"], answer=parsed["answer"],
+                            explanation=parsed["explanation"])
+    db.add(row)
+    await db.flush()
+    await emit(db, world, "question_generated", {"lo": lo.id}, actor=player.id)
+    return {
+        "question_id": f"gen:{row.id}", "kind": "mcq", "prompt": row.prompt,
+        "choices": list(row.choices), "los": [lo.text], "lo_ids": [lo.id],
+        "diagram": None, "generated": True,
     }
 
 
 async def answer_check(db: AsyncSession, world: World, player: Player,
                        question_id: str, answer: str) -> dict:
+    if question_id.startswith("gen:"):
+        return await _answer_generated(db, world, player, question_id, answer)
     q = QUESTIONS.get(question_id)
     if q is None:
         raise GameError("unknown question")
@@ -286,6 +462,37 @@ async def answer_check(db: AsyncSession, world: World, player: Player,
     else:
         score, feedback = await _grade_free(world, q, answer)
         correct = score >= 60
+    return await _finish_attempt(db, world, player, q.id, answer,
+                                 correct, score, feedback, q.los)
+
+
+async def _answer_generated(db: AsyncSession, world: World, player: Player,
+                            question_id: str, answer: str) -> dict:
+    import uuid as _uuid
+
+    try:
+        row = await db.get(GeneratedQuestion, _uuid.UUID(question_id[4:]))
+    except ValueError:
+        row = None
+    if row is None or row.player_id != player.id:
+        raise GameError("unknown question")
+    try:
+        idx = int(answer)
+    except ValueError:
+        raise GameError("answer an option number") from None
+    correct = idx == row.answer
+    score = 100 if correct else 0
+    why = row.explanation or _why_lo(row.lo_id)
+    feedback = ("Precisely so! " + why if correct
+                else f"Not quite — the answer was: \"{row.choices[row.answer]}\". {why}")
+    return await _finish_attempt(db, world, player, question_id, answer,
+                                 correct, score, feedback, (row.lo_id,))
+
+
+async def _finish_attempt(db: AsyncSession, world: World, player: Player,
+                          question_id: str, answer: str, correct: bool,
+                          score: int, feedback: str,
+                          lo_ids: tuple[str, ...]) -> dict:
     # First correct answer of the day earns a little effort — study pays.
     effort_gained = 0
     if correct:
@@ -301,16 +508,23 @@ async def answer_check(db: AsyncSession, world: World, player: Player,
 
             effort_gained = 2
             player.effort = min(T.BALANCE["effort_cap"], player.effort + effort_gained)
-    db.add(CheckAttempt(world_id=world.id, player_id=player.id, question_id=q.id,
-                        world_day=world.world_day, answer=str(answer)[:2000],
+    db.add(CheckAttempt(world_id=world.id, player_id=player.id,
+                        question_id=question_id, world_day=world.world_day,
+                        answer=str(answer)[:2000],
                         correct=correct, score=score, feedback=feedback))
-    for lo_id in q.los:
+    for lo_id in lo_ids:
         await _update_mastery(db, world, player, lo_id, score)
     await emit(db, world, "check_answered",
-               {"question": q.id, "correct": correct, "score": score}, actor=player.id)
+               {"question": question_id, "correct": correct, "score": score},
+               actor=player.id)
     player.last_active_day = world.world_day
     return {"correct": correct, "score": score, "feedback": feedback,
             "effort_gained": effort_gained}
+
+
+def _why_lo(lo_id: str) -> str:
+    lo = LEARNING_OBJECTIVES.get(lo_id)
+    return f"(This one is about: {lo.text})" if lo else ""
 
 
 def _why(q) -> str:

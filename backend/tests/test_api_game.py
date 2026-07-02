@@ -566,3 +566,70 @@ async def test_first_correct_check_of_day_pays_effort(game):
     assert out2["correct"] and out2["effort_gained"] == 0
     state = (await client.get(f"/worlds/{wid}/state", headers=hdr(bob["token"]))).json()
     assert state["player"]["effort"] == min(40, effort0 + 2)
+
+
+def test_generated_question_parsing():
+    from app.pedagogy.tutor import _parse_generated
+
+    good = ('Noise before {"prompt": "P?", "choices": ["a", "b", "c", "d"], '
+            '"answer": 2, "explanation": "Coo."} and after')
+    parsed = _parse_generated(good)
+    assert parsed and parsed["answer"] == 2 and len(parsed["choices"]) == 4
+    assert _parse_generated("no json here") is None
+    assert _parse_generated('{"prompt": "P", "choices": ["a","b","c"], "answer": 0}') is None
+    assert _parse_generated('{"prompt": "P", "choices": ["a","a","b","c"], "answer": 0}') is None
+    assert _parse_generated('{"prompt": "P", "choices": ["a","b","c","d"], "answer": 7}') is None
+    assert _parse_generated('{"prompt": "", "choices": ["a","b","c","d"], "answer": 1}') is None
+
+
+async def test_generated_question_grading(game):
+    import uuid as _uuid
+
+    from app.models import GeneratedQuestion, World
+
+    client, wid = game["client"], game["world_id"]
+    alice, bob = game["students"][0], game["students"][1]
+    async with game["session_factory"]() as db:
+        async with db.begin():
+            world = await db.get(World, _uuid.UUID(wid))
+            row = GeneratedQuestion(
+                world_id=world.id, player_id=_uuid.UUID(alice["player_id"]),
+                lo_id="ch3-equilibrium", world_day=world.world_day,
+                prompt="Where does a market clear?",
+                choices=["Where S crosses D", "At the highest price",
+                         "At zero", "Wherever the Crown says"],
+                answer=0, explanation="Supply meets demand and both sides agree.")
+            db.add(row)
+        qid = f"gen:{row.id}"
+    # someone else's generated question is not answerable
+    r = await client.post(f"/worlds/{wid}/tutor/check", headers=hdr(bob["token"]),
+                          json={"question_id": qid, "answer": "0"})
+    assert r.status_code == 400
+    # the owner answers it and mastery moves
+    r = await client.post(f"/worlds/{wid}/tutor/check", headers=hdr(alice["token"]),
+                          json={"question_id": qid, "answer": "0"})
+    out = r.json()
+    assert out["correct"] and "Supply meets demand" in out["feedback"]
+    r = await client.get(f"/worlds/{wid}/tutor/mastery", headers=hdr(alice["token"]))
+    row_m = next(m for m in r.json() if m["lo_id"] == "ch3-equilibrium")
+    assert row_m["pct"] is not None and row_m["attempts"] >= 1
+
+
+async def test_bank_depth_and_lo_rigor():
+    from collections import Counter
+
+    from app.pedagogy.bank import LEARNING_OBJECTIVES, QUESTIONS
+    from app.pedagogy.openstax import CHAPTER_SUMMARIES
+
+    counts = Counter()
+    for q in QUESTIONS.values():
+        for lo in q.los:
+            counts[lo] += 1
+    for lo in LEARNING_OBJECTIVES.values():
+        assert counts[lo.id] >= 5, f"{lo.id} has only {counts[lo.id]} questions"
+        assert lo.short and len(lo.short) <= 24
+        assert lo.bloom in ("Remember", "Understand", "Apply", "Analyze",
+                            "Evaluate", "Create")
+        assert len(lo.text) > 60, f"{lo.id} objective reads too thin"
+        assert lo.chapter in CHAPTER_SUMMARIES, f"{lo.id} lacks textbook grounding"
+    assert len(QUESTIONS) >= 130

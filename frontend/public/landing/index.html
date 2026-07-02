@@ -363,6 +363,31 @@
   }
   .assess-card h3 { font-size: 17.5px; margin-bottom: 6px; }
   .assess-card p { font-size: 14.5px; color: var(--ink-soft); }
+  .lo-strip { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+  .lo-sample { background: rgba(248,242,226,0.97); border: 1px solid rgba(217,203,168,0.55);
+               border-radius: 16px; padding: 16px 18px; box-shadow: var(--shadow-soft); }
+  .lo-sample p { font-family: var(--font-display); font-size: 16.5px; color: var(--ink); margin: 8px 0 0; }
+  .lo-note p { color: #d8d2bf; font-size: 14px; padding: 8px 4px; }
+  .bloom-pill { display: inline-block; padding: 1px 10px; background: rgba(217,169,63,0.2);
+                border: 1px solid var(--gold); border-radius: 999px; font-size: 11px;
+                font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); }
+  .item-grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+  .item-card { padding: 18px; }
+  .item-tags { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+  .lo-tag { font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; color: var(--ink-soft);
+            text-transform: uppercase; }
+  .item-card .stem { font-weight: 600; font-size: 14.5px; margin: 0 0 10px; }
+  .item-choice { border: 1.5px solid rgba(217,203,168,0.9); border-radius: 10px;
+                 padding: 7px 12px; font-size: 13px; margin-bottom: 6px; color: var(--ink-soft); }
+  .item-choice.right { border-color: var(--sage-dark); color: var(--ink); font-weight: 600;
+                       background: rgba(122,148,96,0.12); }
+  .item-choice.right::after { content: " ✓"; color: var(--sage-dark); font-weight: 800; }
+  .rubric-box { background: rgba(59,48,35,0.05); border-left: 3px solid var(--gold);
+                border-radius: 6px 10px 10px 6px; padding: 10px 14px; font-size: 13px;
+                color: var(--ink-soft); }
+  .item-note { font-size: 12.5px; color: var(--ink-soft); font-style: italic; margin: 10px 0 0; }
+  .depth-note { color: #d8d2bf; font-size: 14.5px; max-width: 860px; margin: 22px auto 0;
+                text-align: center; }
 
   /* ---- quotes ---- */
   .quotes { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); }
@@ -685,7 +710,7 @@
     <div class="numbers reveal">
       <div class="num-card"><div class="n">7</div><div class="l">weeks, one arc</div></div>
       <div class="num-card"><div class="n">29</div><div class="l">learning objectives<br>(OpenStax-aligned)</div></div>
-      <div class="num-card"><div class="n">49</div><div class="l">embedded tutor checks</div></div>
+      <div class="num-card"><div class="n">137</div><div class="l">hand-written assessment items<br>(Pip generates more on demand)</div></div>
       <div class="num-card"><div class="n">16</div><div class="l">one-click interventions</div></div>
       <div class="num-card"><div class="n">&lt;30</div><div class="l">min/week of your time</div></div>
       <div class="num-card"><div class="n">$0</div><div class="l">for students<br>(pairs with free OpenStax)</div></div>
@@ -866,6 +891,103 @@
   </div>
 </section>
 
+<!-- ================= ASSESSMENT & LEARNING SCIENCE ================= -->
+<section id="assessment">
+  <div class="shell">
+    <div class="section-head reveal">
+      <span class="kicker">Defensible by design</span>
+      <h2>Assessment you can put in a syllabus</h2>
+      <p>Engagement is lovely; evidence is better. Every objective is written to a Bloom level, every item maps to an objective, and every mastery number traces back to answers you can read. Built to survive a curriculum-committee meeting.</p>
+    </div>
+
+    <div class="lo-strip reveal">
+      <div class="lo-sample">
+        <span class="bloom-pill">Evaluate</span>
+        <p>"Decide whether to take one more unit of an action by comparing its marginal benefit to its marginal cost, setting sunk costs aside."</p>
+      </div>
+      <div class="lo-sample">
+        <span class="bloom-pill">Analyze</span>
+        <p>"Explain why open access leads each user to overuse a shared resource even while the group is worse off, and evaluate fixes such as quotas, permits, and ownership."</p>
+      </div>
+      <div class="lo-note">
+        <p>29 objectives adapted from OpenStax Ch.&nbsp;2&ndash;13, each rewritten as an observable, Bloom-aligned behavior &mdash; not a topic label. Students see these full statements (and their own mastery meter for each) in Pip's Study; your heatmap shows the same objectives as compact columns.</p>
+      </div>
+    </div>
+
+    <div class="section-head reveal" style="margin-top:36px; margin-bottom:18px;">
+      <h3 style="font-size:22px;color:var(--parchment,#f6efdd);">The actual items, not a promise of items</h3>
+      <p>Three from the bank of 137 &mdash; multiple choice with misconception-anchored distractors, diagram reads, and rubric-graded free response.</p>
+    </div>
+    <div class="item-grid reveal">
+      <div class="panel item-card">
+        <div class="item-tags"><span class="bloom-pill">Apply</span><span class="lo-tag">Marginal thinking &middot; week 1</span></div>
+        <p class="stem">A caravan pays 60c each for up to 5 tools. Your first three cost 40c of inputs apiece; rushing two more would cost 70c apiece. How many do you sell?</p>
+        <div class="item-choice right">3 &mdash; sell while the marginal 60c beats the marginal cost, stop when it doesn't</div>
+        <div class="item-choice">5 &mdash; a sale is a sale</div>
+        <div class="item-choice">0 &mdash; rush work is never worth it</div>
+        <div class="item-choice">4 &mdash; split the difference</div>
+        <p class="item-note">Each distractor is a named misconception: revenue-chasing, loss aversion, anchoring.</p>
+      </div>
+      <div class="panel item-card">
+        <div class="item-tags"><span class="bloom-pill">Analyze</span><span class="lo-tag">Price controls &middot; week 3</span></div>
+        <p class="stem">The Crown pins the price at the ceiling line. Reading the chart at that price:</p>
+        <svg viewBox="0 0 360 250" role="img" aria-label="Supply and demand with a price ceiling below equilibrium" style="width:100%;height:auto;background:#fffdf6;border:1px solid #d9cba8;border-radius:12px;">
+          <line x1="36" y1="218" x2="36" y2="12" stroke="#6b5d49" stroke-width="1.5"/>
+          <line x1="36" y1="218" x2="330" y2="218" stroke="#6b5d49" stroke-width="1.5"/>
+          <text x="34" y="12" font-size="11" font-weight="600" fill="#6b5d49">Price</text>
+          <text x="326" y="244" font-size="11" font-weight="600" fill="#6b5d49" text-anchor="end">Quantity</text>
+          <line x1="123" y1="218" x2="123" y2="157" stroke="#8a6a48" stroke-width="1" stroke-dasharray="2 4"/>
+          <line x1="239" y1="218" x2="239" y2="157" stroke="#8a6a48" stroke-width="1" stroke-dasharray="2 4"/>
+          <text x="123" y="230" font-size="10" fill="#6b5d49" text-anchor="middle">30</text>
+          <text x="239" y="230" font-size="10" fill="#6b5d49" text-anchor="middle">70</text>
+          <line x1="36" y1="157" x2="326" y2="157" stroke="#b5485d" stroke-width="2" stroke-dasharray="7 5"/>
+          <text x="330" y="161" font-size="10.5" font-weight="700" fill="#b5485d">ceiling</text>
+          <polyline points="36,218 326,14" fill="none" stroke="#5f7a4a" stroke-width="2.4" stroke-linecap="round"/>
+          <text x="331" y="18" font-size="12" font-weight="700" fill="#5f7a4a">S</text>
+          <polyline points="36,14 326,218" fill="none" stroke="#a84f2f" stroke-width="2.4" stroke-linecap="round"/>
+          <text x="331" y="222" font-size="12" font-weight="700" fill="#a84f2f">D</text>
+          <circle cx="181" cy="116" r="4" fill="#d9a93f" stroke="#3b3023" stroke-width="1.2"/>
+          <text x="188" y="110" font-size="12" font-weight="700" fill="#3b3023">E</text>
+        </svg>
+        <div class="item-choice right" style="margin-top:10px;">A shortage: buyers want 70 units but sellers bring only 30</div>
+        <p class="item-note">Students read the same painted diagrams in the game; 15 items are chart reads like this one.</p>
+      </div>
+      <div class="panel item-card">
+        <div class="item-tags"><span class="bloom-pill">Understand</span><span class="lo-tag">Deadweight loss &middot; week 3</span></div>
+        <p class="stem">The Bread Decree capped prices "to help buyers." In a sentence or two, explain how buyers themselves can end up worse off.</p>
+        <div class="rubric-box">
+          <b>Grading rubric</b> (LLM-graded, keyword fallback): credit shortage at any legal price, queueing and rationing costs, gray markets, blocked trades destroying value buyers would have enjoyed.
+        </div>
+        <p class="item-note">Free responses arrive right after the student lived it: this one triggers the week the ceiling lands in their own market.</p>
+      </div>
+    </div>
+    <p class="depth-note reveal">Every objective carries at least five hand-written items. When a student practices past the bank, Pip writes a fresh one on the spot &mdash; grounded in the objective, that chapter's OpenStax text, and the questions already asked &mdash; and every generated item is stored verbatim for your review.</p>
+
+    <div class="assess-grid" style="margin-top:36px;">
+      <div class="panel assess-card reveal">
+        <span class="num">1</span>
+        <h3>Embedded tutor checks</h3>
+        <p>Pip brings one check to every student every day, picked from what's happening in their own market &mdash; and opens it for them, so the shy ones aren't skipped. Two to four minutes: MCQs, diagram reads, and one-sentence free responses graded by rubric.</p>
+      </div>
+      <div class="panel assess-card reveal">
+        <span class="num">2</span>
+        <h3>Mastery, not memory</h3>
+        <p>Each objective carries a rolling, recency-weighted mastery estimate. Wrong-then-right counts as growth. You see the whole class as a heatmap; students see their own meters in Pip's Study and can practice any weak objective on the spot &mdash; so red cells tend to heal between lectures.</p>
+      </div>
+      <div class="panel assess-card reveal">
+        <span class="num">3</span>
+        <h3>Participation &ne; wealth</h3>
+        <p>Grades reward session regularity, market activity, event participation, and demonstrated understanding, never coin balance. The student who got rich cornering wool and the student who went bankrupt learning why are graded on the same evidence: what they understood.</p>
+      </div>
+      <div class="panel assess-card reveal">
+        <span class="num">4</span>
+        <h3>Integrity by design</h3>
+        <p>Dozens of low-stakes checks make the return on cheating terrible, because there's no single exam worth outsourcing. The anomaly engine also watches for multi-accounting, collusion, and suspicious wealth transfers, using the same machinery that detects cartels.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ================= FOR THE PROFESSOR ================= -->
 <section id="professor">
   <div class="shell">
@@ -1018,39 +1140,6 @@
           <h3>The Agora Crier</h3>
           <p>The town newspaper, published at every market close, covers overnight price moves, named movers, and the week's events. During Market Wars it adds investigative reporting that makes cartel strategy uncomfortably public. Students check it the way they check a group chat.</p>
         </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ================= ASSESSMENT ================= -->
-<section id="assessment">
-  <div class="shell">
-    <div class="section-head reveal">
-      <span class="kicker">Defensible by design</span>
-      <h2>Assessment you can put in a syllabus</h2>
-      <p>Engagement is lovely; evidence is better. Agora's grade model was designed to survive a curriculum-committee meeting.</p>
-    </div>
-    <div class="assess-grid">
-      <div class="panel assess-card reveal">
-        <span class="num">1</span>
-        <h3>Embedded tutor checks</h3>
-        <p>Checks of 2–4 minutes arrive in character at the teachable moment, roughly 8–12 per student per week: MCQs, graph reads, predict-then-observe prompts, and one-sentence free responses graded by rubric. Every item is tagged to a learning objective adapted from OpenStax Ch. 2–13.</p>
-      </div>
-      <div class="panel assess-card reveal">
-        <span class="num">2</span>
-        <h3>Mastery, not memory</h3>
-        <p>Each of 29 learning objectives carries a rolling, recency-weighted mastery estimate. Wrong-then-right counts as growth. You see the whole class as a heatmap; students see their own meters in Pip's Study and can practice any weak objective on the spot &mdash; so red cells tend to heal between lectures.</p>
-      </div>
-      <div class="panel assess-card reveal">
-        <span class="num">3</span>
-        <h3>Participation ≠ wealth</h3>
-        <p>Grades reward session regularity, market activity, event participation, and demonstrated understanding, never coin balance. The student who got rich cornering wool and the student who went bankrupt learning why are graded on the same evidence: what they understood.</p>
-      </div>
-      <div class="panel assess-card reveal">
-        <span class="num">4</span>
-        <h3>Integrity by design</h3>
-        <p>Dozens of low-stakes checks make the return on cheating terrible, because there's no single exam worth outsourcing. The anomaly engine also watches for multi-accounting, collusion, and suspicious wealth transfers, using the same machinery that detects cartels.</p>
       </div>
     </div>
   </div>

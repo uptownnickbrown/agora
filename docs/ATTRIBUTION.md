@@ -7,9 +7,14 @@ the chapter objectives of OpenStax *Principles of Microeconomics 3e*, © Rice
 University, licensed under Creative Commons Attribution 4.0 International
 (CC BY 4.0). https://openstax.org/details/books/principles-microeconomics-3e
 
-Changes: objectives were paraphrased, condensed, and re-mapped onto the
-Agora seven-week arc. The tutor-check question bank is original work written
-for this project.
+Changes: objectives were paraphrased, condensed, rewritten against Bloom's
+taxonomy, and re-mapped onto the Agora seven-week arc. The tutor-check
+question bank is original work written for this project.
+
+`backend/app/pedagogy/openstax.py` contains the verbatim "Key Concepts and
+Summary" text of chapters 2, 3, 5, 7-13 of the same book (CC BY 4.0),
+fetched by `backend/scripts/scrape_openstax.py`. It grounds Professor Pip's
+chat answers and on-the-fly generated practice questions in the course text.
 
 ## Game art
 

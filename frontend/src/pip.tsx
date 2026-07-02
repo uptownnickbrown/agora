@@ -54,6 +54,13 @@ export function CheckCard({ wid, lo, notify, refresh, compact, onAnswered }: {
 
   return (
     <div style={{ padding: compact ? "8px 2px" : 0 }}>
+      {check.generated && (
+        <span className="tag" title="You cleared the question bank for this objective, so Pip wrote this one just now — grounded in the course text."
+              style={{ background: "rgba(217,169,63,0.18)",
+                       borderColor: "var(--gold)" }}>
+          Freshly penned by Pip
+        </span>
+      )}
       <p style={{ margin: "6px 0", fontWeight: 600 }}>{check.prompt}</p>
       {check.diagram && (
         <div style={{ margin: "8px 0", textAlign: "center" }}>

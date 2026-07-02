@@ -8,7 +8,8 @@ import { CheckCard, openPip } from "./pip";
 type Notify = (msg: string, error?: boolean) => void;
 
 type MasteryRow = {
-  lo_id: string; text: string; week: number; pct: number | null; attempts: number;
+  lo_id: string; text: string; short: string; bloom: string; week: number;
+  pct: number | null; attempts: number;
 };
 
 function meterColor(pct: number | null) {
@@ -70,7 +71,8 @@ export function Study({ state, wid, notify, refresh }: {
                    title={m.pct == null
                      ? "Not yet assessed — practice to find out"
                      : `${m.pct}% over ${m.attempts} answer${m.attempts === 1 ? "" : "s"}`}>
-                <span className="lo-text">{m.text}</span>
+                <span className="lo-text">
+                  <span className="bloom-chip">{m.bloom}</span> {m.text}</span>
                 <span className="meter mastery-meter">
                   <span style={{ width: `${Math.max(4, m.pct ?? 0)}%`,
                                  background: meterColor(m.pct) }} />
@@ -90,7 +92,7 @@ export function Study({ state, wid, notify, refresh }: {
       <div className="panel grow" style={{ minWidth: 320 }}>
         {practicing ? (
           <>
-            <div className="kicker">practicing</div>
+            <div className="kicker">practicing · {practicing.bloom}</div>
             <h3 style={{ marginBottom: 2 }}>{practicing.text}</h3>
             <div className="muted" style={{ marginBottom: 8 }}>
               {practicing.pct == null

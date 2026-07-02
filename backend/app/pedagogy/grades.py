@@ -86,6 +86,7 @@ async def mastery_heatmap(db: AsyncSession, world: World) -> dict:
             "scores": {lo.id: by_lo.get(lo.id) for lo in relevant},
         })
     return {
-        "los": [{"id": lo.id, "text": lo.text, "week": lo.week} for lo in relevant],
+        "los": [{"id": lo.id, "text": lo.text, "short": lo.short,
+                 "bloom": lo.bloom, "week": lo.week} for lo in relevant],
         "students": grid,
     }
