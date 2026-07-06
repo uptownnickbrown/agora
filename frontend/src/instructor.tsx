@@ -484,21 +484,11 @@ function Interventions({ wid, notify, prefill }: {
   );
 }
 
-function Heatmap({ wid }: { wid: string }) {
-  const [data, setData] = useState<any>(null);
-  useEffect(() => {
-    api.get(`/worlds/${wid}/instructor/heatmap`).then(setData).catch(() => {});
-  }, [wid]);
-  if (!data) return <div className="panel">Loading…</div>;
-  const empty = data.students.every((s: any) =>
-    data.los.every((lo: any) => s.scores[lo.id] == null));
-  const color = (pct: number | null) =>
-    pct == null ? "#eee" : pct > 70 ? "var(--sage)" : pct > 40 ? "#ecc473" : "var(--terracotta)";
-  // Compact label served by the API; the full Bloom-aligned statement lives
-  // in the tooltip (and in the students' Study).
-  const loLabel = (lo: any) => lo.short
-    || titleize(lo.id.replace(/^ch\d+-/, "").replace(/-/g, "_"));
-  const legend = (
+const heatColor = (pct: number | null) =>
+  pct == null ? "#eee" : pct > 70 ? "var(--sage)" : pct > 40 ? "#ecc473" : "var(--terracotta)";
+
+function HeatLegend() {
+  return (
     <div className="row" style={{ gap: 14, margin: "2px 0 10px", fontSize: 12 }}>
       {[["var(--sage)", "Above 70%: mastered"],
         ["#ecc473", "40–70%: developing"],
@@ -512,62 +502,242 @@ function Heatmap({ wid }: { wid: string }) {
       ))}
     </div>
   );
+}
+
+/** Right-hand drill-down: the full Bloom-aligned objective, class stats,
+    who needs a check-in, and the actual assessment items behind the column. */
+function LoDetail({ lo, students }: { lo: any; students: any[] }) {
+  const cells = students
+    .map((s) => ({ merchant: s.merchant, pct: s.scores[lo.id] == null
+      ? null : Math.round(s.scores[lo.id] / 10) }));
+  const assessed = cells.filter((c) => c.pct != null) as
+    { merchant: string; pct: number }[];
+  const buckets: [string, string, number][] = [
+    ["Mastered", "var(--sage)", assessed.filter((c) => c.pct > 70).length],
+    ["Developing", "#ecc473", assessed.filter((c) => c.pct > 40 && c.pct <= 70).length],
+    ["Needs teaching", "var(--terracotta)", assessed.filter((c) => c.pct <= 40).length],
+    ["Not yet assessed", "#ddd", cells.length - assessed.length],
+  ];
+  const max = Math.max(1, ...buckets.map(([, , n]) => n));
+  const checkIn = [...assessed].sort((a, b) => a.pct - b.pct)
+    .filter((c) => c.pct <= 55).slice(0, 3);
   return (
-    <div className="panel" style={{ overflowX: "auto" }}>
-      <h3>Mastery heatmap</h3>
-      <div className="muted" style={{ marginBottom: 6 }}>
-        Each cell is one student's mastery of one learning objective, measured by
-        Pip's in-game tutor checks. Students see their own scores in the Study
-        and can practice any weak objective directly, so expect red cells to
-        heal between lectures.
+    <>
+      <div className="kicker">week {lo.week} · {lo.bloom || "objective"}</div>
+      <div style={{ fontSize: 14.5, fontWeight: 600, lineHeight: 1.45,
+                    margin: "4px 0 10px" }}>{lo.text}</div>
+      <div className="row" style={{ gap: 8, marginBottom: 10 }}>
+        <span className="plaque">class average{" "}
+          <b>{lo.class_avg == null ? "—" : `${lo.class_avg}%`}</b></span>
+        <span className="plaque">{lo.assessed}/{students.length} assessed</span>
       </div>
-      {legend}
-      {empty ? (
+      {buckets.map(([label, bg, n]) => (
+        <div key={label} style={{ display: "flex", alignItems: "center",
+                                  gap: 8, marginBottom: 4, fontSize: 12.5 }}>
+          <span style={{ width: 110 }} className="muted">{label}</span>
+          <div className="meter" style={{ flex: 1 }}>
+            <span style={{ width: `${Math.round(100 * n / max)}%`, background: bg }} />
+          </div>
+          <b style={{ width: 18, textAlign: "right" }}>{n}</b>
+        </div>
+      ))}
+      {checkIn.length > 0 && (
+        <>
+          <div className="kicker" style={{ marginTop: 12 }}>worth a check-in</div>
+          {checkIn.map((c) => (
+            <div key={c.merchant} style={{ display: "flex", fontSize: 13.5 }}>
+              <span style={{ flex: 1 }}>{c.merchant}</span>
+              <b className={c.pct <= 40 ? "heat-bad" : ""}>{c.pct}%</b>
+            </div>
+          ))}
+        </>
+      )}
+      {lo.sample_items?.length > 0 && (
+        <>
+          <div className="kicker" style={{ marginTop: 12 }}>
+            from the item bank ({lo.item_count} items)</div>
+          {lo.sample_items.map((s: string, i: number) => (
+            <div key={i} className="muted"
+                 style={{ fontSize: 12.5, fontStyle: "italic", margin: "5px 0",
+                          paddingLeft: 10,
+                          borderLeft: "3px solid var(--parchment-edge)" }}>
+              “{s}”
+            </div>
+          ))}
+        </>
+      )}
+      <div className="muted" style={{ fontSize: 12, marginTop: 12 }}>
+        Students see this objective with their own score in Pip's Study and can
+        practice it directly — red cells tend to heal between lectures.
+      </div>
+    </>
+  );
+}
+
+function Heatmap({ wid }: { wid: string }) {
+  const [data, setData] = useState<any>(null);
+  const [sel, setSel] = useState<string | null>(null);
+  useEffect(() => {
+    api.get(`/worlds/${wid}/instructor/heatmap`).then((d) => {
+      setData(d);
+      // Open on the objective that most needs lecture time.
+      const assessed = d.los.filter((lo: any) => lo.class_avg != null);
+      const weakest = assessed.sort((a: any, b: any) => a.class_avg - b.class_avg)[0];
+      setSel((weakest || d.los[0])?.id ?? null);
+    }).catch(() => {});
+  }, [wid]);
+  if (!data) return <div className="panel">Loading…</div>;
+  const empty = data.students.every((s: any) =>
+    data.los.every((lo: any) => s.scores[lo.id] == null));
+  const loLabel = (lo: any) => lo.short
+    || titleize(lo.id.replace(/^ch\d+-/, "").replace(/-/g, "_"));
+  const selected = data.los.find((lo: any) => lo.id === sel);
+
+  // Week group headers: contiguous runs of lo.week.
+  const weekSpans: { week: number; span: number }[] = [];
+  for (const lo of data.los) {
+    const last = weekSpans[weekSpans.length - 1];
+    if (last && last.week === lo.week) last.span += 1;
+    else weekSpans.push({ week: lo.week, span: 1 });
+  }
+  const weakest = data.los.filter((lo: any) => lo.class_avg != null)
+    .sort((a: any, b: any) => a.class_avg - b.class_avg).slice(0, 2);
+
+  if (empty) {
+    return (
+      <div className="panel">
+        <h3>Mastery heatmap</h3>
         <div className="pip-bubble" style={{ maxWidth: 560 }}>
           No tutor checks have been answered yet. Checks appear naturally as
           students play, so expect the first results within a day or two of
           class activity.
         </div>
-      ) : (
-      <table style={{ borderCollapse: "collapse", fontSize: 12 }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: "left", padding: 4, verticalAlign: "bottom" }}>Student</th>
-            {data.los.map((lo: any) => (
-              <th key={lo.id} title={`${lo.bloom ? `[${lo.bloom}] ` : ""}${lo.text}`}
-                  style={{ padding: "4px 2px", verticalAlign: "bottom",
-                           fontSize: 10, fontWeight: 500 }}>
-                <div style={{ writingMode: "vertical-rl",
-                              transform: "rotate(180deg)",
-                              height: 130, overflow: "hidden",
-                              textOverflow: "ellipsis", whiteSpace: "nowrap",
-                              margin: "0 auto" }}>
-                  {loLabel(lo)}
-                </div>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.students.map((s: any) => (
-            <tr key={s.merchant}>
-              <td style={{ padding: 4 }}>{s.merchant}</td>
-              {data.los.map((lo: any) => {
-                const score = s.scores[lo.id];
-                const pct = score == null ? null : Math.round(score / 10);
-                return (
-                  <td key={lo.id} title={`${lo.text}: ${pct ?? "—"}%`}
-                      style={{ width: 26, height: 22, background: color(pct),
-                               border: "1px solid #fff", textAlign: "center" }}>
-                    {pct ?? ""}
+      </div>
+    );
+  }
+
+  return (
+    <div className="col">
+      <div className="panel" style={{ padding: "12px 16px" }}>
+        <div className="row" style={{ alignItems: "center", gap: 10 }}>
+          <h3 style={{ margin: 0 }}>Mastery heatmap</h3>
+          <span className="plaque">class average <b>{data.class_avg ?? "—"}%</b></span>
+          <span className="plaque">{data.students.length} students ×{" "}
+            {data.los.length} objectives</span>
+          {weakest.length > 0 && (
+            <span className="muted" style={{ fontSize: 13 }}>
+              Needs lecture time:{" "}
+              {weakest.map((lo: any, i: number) => (
+                <React.Fragment key={lo.id}>
+                  {i > 0 && ", "}
+                  <a style={{ cursor: "pointer", fontWeight: 600,
+                              color: "var(--terracotta-dark)" }}
+                     onClick={() => setSel(lo.id)}>
+                    {loLabel(lo)} ({lo.class_avg}%)</a>
+                </React.Fragment>
+              ))}
+            </span>
+          )}
+        </div>
+        <div className="muted" style={{ marginTop: 4, fontSize: 13 }}>
+          Every learning objective for every student, measured by Pip's in-game
+          tutor checks. Click any column for the full objective, the class
+          picture, and the assessment items behind it.
+        </div>
+      </div>
+      <div className="row">
+        <div className="panel grow" style={{ overflowX: "auto" }}>
+          <HeatLegend />
+          <table style={{ borderCollapse: "collapse", fontSize: 12 }}>
+            <thead>
+              <tr>
+                <th />
+                {weekSpans.map(({ week, span }, i) => (
+                  <th key={week} colSpan={span}
+                      style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                               textTransform: "uppercase", color: "var(--ink-soft)",
+                               borderLeft: i > 0 ? "2px solid var(--parchment-edge)" : undefined,
+                               padding: "2px 0" }}>
+                    wk {week}
+                  </th>
+                ))}
+                <th />
+              </tr>
+              <tr>
+                <th style={{ textAlign: "left", padding: 4, verticalAlign: "bottom" }}>Student</th>
+                {data.los.map((lo: any) => (
+                  <th key={lo.id} title={`${lo.bloom ? `[${lo.bloom}] ` : ""}${lo.text}`}
+                      onClick={() => setSel(lo.id)}
+                      style={{ padding: "4px 2px", verticalAlign: "bottom",
+                               fontSize: 10, cursor: "pointer",
+                               fontWeight: sel === lo.id ? 800 : 500,
+                               background: sel === lo.id
+                                 ? "rgba(122,148,96,0.14)" : undefined,
+                               borderRadius: "6px 6px 0 0" }}>
+                    <div style={{ writingMode: "vertical-rl",
+                                  transform: "rotate(180deg)",
+                                  height: 130, overflow: "hidden",
+                                  textOverflow: "ellipsis", whiteSpace: "nowrap",
+                                  margin: "0 auto" }}>
+                      {loLabel(lo)}
+                    </div>
+                  </th>
+                ))}
+                <th style={{ fontSize: 10, verticalAlign: "bottom", padding: "4px 2px" }}>
+                  <div style={{ writingMode: "vertical-rl", transform: "rotate(180deg)",
+                                height: 130, margin: "0 auto", fontWeight: 700 }}>
+                    Average
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style={{ borderBottom: "2px solid var(--parchment-edge)" }}>
+                <td style={{ padding: 4, fontWeight: 700 }}>Class average</td>
+                {data.los.map((lo: any) => (
+                  <td key={lo.id} title={`${lo.text}: class ${lo.class_avg ?? "—"}%`}
+                      onClick={() => setSel(lo.id)}
+                      style={{ width: 26, height: 22, background: heatColor(lo.class_avg),
+                               border: "1px solid #fff", textAlign: "center",
+                               fontWeight: 700, cursor: "pointer" }}>
+                    {lo.class_avg ?? ""}
                   </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      )}
+                ))}
+                <td style={{ textAlign: "center", fontWeight: 700 }}>
+                  {data.class_avg ?? ""}</td>
+              </tr>
+              {data.students.map((s: any) => (
+                <tr key={s.merchant}>
+                  <td style={{ padding: 4 }}>{s.merchant}</td>
+                  {data.los.map((lo: any) => {
+                    const score = s.scores[lo.id];
+                    const pct = score == null ? null : Math.round(score / 10);
+                    return (
+                      <td key={lo.id} title={`${s.merchant} — ${lo.text}: ${pct ?? "not yet assessed"}${pct == null ? "" : "%"}`}
+                          onClick={() => setSel(lo.id)}
+                          style={{ width: 26, height: 22, background: heatColor(pct),
+                                   border: "1px solid #fff", textAlign: "center",
+                                   cursor: "pointer",
+                                   outline: sel === lo.id
+                                     ? "1px solid rgba(59,48,35,0.25)" : undefined }}>
+                        {pct ?? ""}
+                      </td>
+                    );
+                  })}
+                  <td style={{ textAlign: "center", fontWeight: 600,
+                               color: "var(--ink-soft)" }}>
+                    {s.avg ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="panel" style={{ flex: "0 0 340px", alignSelf: "flex-start" }}>
+          {selected
+            ? <LoDetail lo={selected} students={data.students} />
+            : <div className="muted">Click a column to inspect an objective.</div>}
+        </div>
+      </div>
     </div>
   );
 }
@@ -700,7 +870,7 @@ function MondayBrief({ wid }: { wid: string }) {
       </div>
       <div className="row" style={{ alignItems: "center" }}>
         <button onClick={loadPreview} disabled={previewing}>
-          {previewing ? "Assembling from your class's week… (about half a minute)"
+          {previewing ? "Assembling from your class's week…"
             : preview ? "Rebuild the preview" : "Preview this week's brief"}</button>
         {!demo && <>
           <label style={{ display: "inline-flex", alignItems: "center", gap: 6,
@@ -738,10 +908,10 @@ function Playbook({ wid }: { wid: string }) {
   const [week, setWeek] = useState<number | "">("");
   const [pb, setPb] = useState<any>(null);
   const [busy, setBusy] = useState(false);
-  async function generate() {
+  async function generate(w: number | "" = week) {
     setBusy(true);
     try {
-      const q = week === "" ? "" : `?week=${week}`;
+      const q = w === "" ? "" : `?week=${w}`;
       setPb(await api.get(`/worlds/${wid}/instructor/playbook${q}`));
     } catch { /* noop */ }
     setBusy(false);
@@ -750,23 +920,29 @@ function Playbook({ wid }: { wid: string }) {
     <div className="col">
     <div className="panel">
       <h3>Lecture playbook</h3>
-      <div className="muted" style={{ marginBottom: 6 }}>
-        A lecture-prep brief built from your class's market data: what happened,
-        which concepts need attention, and discussion questions tied to real
-        student decisions.
+      <div className="muted" style={{ marginBottom: 8 }}>
+        A lecture-prep brief assembled from your class's market data: what
+        happened, which concepts need attention, and discussion questions tied
+        to decisions your students actually made. This same brief lands in
+        your inbox every Monday.
       </div>
       <div className="row" style={{ alignItems: "center" }}>
-        <label>Week <input type="number" min={1} max={7} style={{ width: 56 }}
-                           value={week} placeholder="now"
-                           onChange={(e) => setWeek(
-                             e.target.value === "" ? "" : +e.target.value)} /></label>
-        <button onClick={generate} disabled={busy}>
-          {busy ? "Writing… (about half a minute)" : "Generate"}</button>
+        <label>
+          <select value={week} style={{ marginRight: 4 }}
+                  onChange={(e) => setWeek(
+                    e.target.value === "" ? "" : +e.target.value)}>
+            <option value="">This week</option>
+            {[1, 2, 3, 4, 5, 6, 7].map((w) => (
+              <option key={w} value={w}>Week {w}</option>
+            ))}
+          </select>
+        </label>
+        <button onClick={() => generate()} disabled={busy}>
+          {busy ? "Assembling from your class's data…"
+            : pb ? "Rebuild" : "Open the playbook"}</button>
         {pb && <button className="quiet" onClick={() => {
           navigator.clipboard?.writeText(pb.markdown);
         }}>Copy Markdown</button>}
-        {!pb && !busy && <span className="muted">
-          Leave the week blank for the current one.</span>}
       </div>
       {pb && (
         <div style={{ background: "#fffdf6", padding: "8px 18px 14px",

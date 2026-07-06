@@ -72,10 +72,14 @@ async def _week_mover(db: AsyncSession, world: World, week: int) -> str | None:
 
 
 async def _weakest_objectives(db: AsyncSession, world: World, n: int = 2) -> list[str]:
-    """Class-average mastery per objective, lowest first — lecture fuel."""
+    """Class-average mastery per objective, lowest first — lecture fuel.
+    Enrolled students only; demo visitors don't tilt the class picture."""
     rows = (
         await db.scalars(
-            select(MasteryEstimate).where(MasteryEstimate.world_id == world.id)
+            select(MasteryEstimate)
+            .join(Player, Player.id == MasteryEstimate.player_id)
+            .where(MasteryEstimate.world_id == world.id,
+                   ~Player.is_npc, ~Player.is_visitor)
         )
     ).all()
     sums: dict[str, list[int]] = {}
@@ -83,7 +87,8 @@ async def _weakest_objectives(db: AsyncSession, world: World, n: int = 2) -> lis
         sums.setdefault(m.lo_id, []).append(m.score)
     avgs = sorted(
         ((sum(v) / len(v) / 10, lo) for lo, v in sums.items()
-         if lo in LEARNING_OBJECTIVES and len(v) >= 2),
+         if lo in LEARNING_OBJECTIVES and len(v) >= 2
+         and LEARNING_OBJECTIVES[lo].week <= world.current_week),
         key=lambda t: t[0])
     return [f"{LEARNING_OBJECTIVES[lo].short} ({pct:.0f}%)"
             for pct, lo in avgs[:n] if pct < 65]
@@ -107,7 +112,8 @@ async def build_digest(db: AsyncSession, world: World, week: int) -> EmailMessag
     players = {r["merchant"]: r for r in rows}
     roster = (
         await db.scalars(select(Player).where(Player.world_id == world.id,
-                                              ~Player.is_npc))
+                                              ~Player.is_npc,
+                                              ~Player.is_visitor))
     ).all()
     for p in roster:
         reasons = []

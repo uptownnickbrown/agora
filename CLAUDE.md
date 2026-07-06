@@ -15,10 +15,14 @@ orientation an agent needs to work in the code safely.
   - `app/services/` — game logic: `market`/`engine/orderbook` (the double-auction
     matching + escrow — the money code), `close` (daily market close, the world
     heartbeat), `fun` (puzzle, fishing, haggling, streaks), `npc`, `shops`,
-    `production`, `digest` (Monday Brief email), `worlds`, `auth`.
+    `production`, `digest` (Monday Brief email), `demo_seed` (furnishes demo
+    visitors with a mid-course life; they're `Player.is_visitor` and hidden
+    from instructor views), `worlds`, `auth`.
   - `app/pedagogy/` — `tutor` (Pip chat + tutor checks + LLM grading + on-the-fly
     question generation), `bank` (learning objectives + question bank),
-    `puzzles`, `grades`, `playbook`, `openstax` (committed CC-BY course text).
+    `puzzles`, `grades`, `playbook`, `demo_artifacts` (hand-polished canned
+    playbook/brief for the pinned-seed demo world — regenerate if sim balance
+    changes), `openstax` (committed CC-BY course text).
   - `app/template.py` — the canonical game definition (goods, recipes,
     facilities, balance constants). **Source of truth**; the frontend has a
     hardcoded mirror in `places.tsx` that must be kept in sync by hand.

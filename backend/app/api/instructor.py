@@ -50,7 +50,8 @@ async def create_world(body: CreateWorldIn, db: DB, user: CurrentUser):
 async def dashboard(db: DB, world: WorldDep, instructor: Instructor):
     players = (
         await db.scalars(
-            select(Player).where(Player.world_id == world.id, ~Player.is_npc)
+            select(Player).where(Player.world_id == world.id, ~Player.is_npc,
+                                 ~Player.is_visitor)
             .order_by(Player.coins.desc())
         )
     ).all()
@@ -117,7 +118,8 @@ async def catalog(db: DB, world: WorldDep, instructor: Instructor):
 
     roster = (
         await db.scalars(
-            select(Player).where(Player.world_id == world.id, ~Player.is_npc)
+            select(Player).where(Player.world_id == world.id, ~Player.is_npc,
+                                 ~Player.is_visitor)
         )
     ).all()
     return {
@@ -207,6 +209,14 @@ async def heatmap(db: DB, world: WorldDep, instructor: Instructor):
 @router.get("/worlds/{world_id}/instructor/playbook")
 async def playbook(db: DB, world: WorldDep, instructor: Instructor,
                    week: int | None = None):
+    # Demo worlds serve committed, hand-polished playbooks for their marquee
+    # weeks: instant, excellent, and consistent with the pinned-seed history.
+    if (world.config or {}).get("is_demo"):
+        from ..pedagogy.demo_artifacts import demo_playbook
+
+        canned = demo_playbook(week or world.current_week)
+        if canned:
+            return canned
     return await build_playbook(db, world, week)
 
 
@@ -246,7 +256,27 @@ async def digest_preview(db: DB, world: WorldDep, instructor: Instructor,
                          week: int | None = None):
     from ..services.digest import build_digest
 
-    msg = await build_digest(db, world, _digest_week(world, week))
+    wk = _digest_week(world, week)
+    if (world.config or {}).get("is_demo"):
+        from ..pedagogy.demo_artifacts import (
+            DEMO_BRIEF_MD,
+            DEMO_BRIEF_SUBJECT,
+            DEMO_BRIEF_WEEK,
+        )
+
+        if wk == DEMO_BRIEF_WEEK:
+            from ..config import get_settings
+            from ..services.email import brief_shell, markdown_to_html
+
+            base = get_settings().app_base_url.rstrip("/")
+            return {"subject": DEMO_BRIEF_SUBJECT, "markdown": DEMO_BRIEF_MD,
+                    "html": brief_shell("Econ 101", wk,
+                                        markdown_to_html(DEMO_BRIEF_MD),
+                                        f"{base}/#/{world.id}"),
+                    "to": "you@your-university.edu",
+                    "attachments": [f"agora-gradebook-week{wk}.csv"],
+                    "enabled": True}
+    msg = await build_digest(db, world, wk)
     return {"subject": msg.subject, "markdown": msg.text, "html": msg.html,
             "to": msg.to,
             "attachments": [name for name, _, _ in msg.attachments],

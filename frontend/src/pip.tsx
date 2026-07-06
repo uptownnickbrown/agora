@@ -188,7 +188,7 @@ export function PipDock({ wid, day, nudge, checkAvailable, inStudy, onGoStudy }:
           </div>
         )}
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <div role="button"
+          <div role="button" className="pip-launcher"
                title={checkAvailable ? "Pip has a question for you"
                                      : "Ask Professor Pip"}
                style={{ cursor: "pointer", textAlign: "center" }}
@@ -197,7 +197,7 @@ export function PipDock({ wid, day, nudge, checkAvailable, inStudy, onGoStudy }:
                  style={{ position: "relative", overflow: "visible",
                           margin: "0 auto" }}>
               <Asset slot={nudge && !nudgeDismissed ? "pip/pip_talking" : "pip/pip_idle"}
-                     glyph="🐦" size={62} alt="Professor Pip" />
+                     glyph="🐦" size={78} alt="Professor Pip" />
               {checkAvailable && <span className="pip-badge" />}
             </div>
             <span className="pip-label">

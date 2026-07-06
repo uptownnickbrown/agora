@@ -583,12 +583,17 @@ async def _update_mastery(db: AsyncSession, world: World, player: Player,
         )
     )
     if row is None:
+        # Warm start from an agnostic 50% prior, not from zero: with a cold
+        # start even a perfect student reads 40% after one answer and 64%
+        # after two, which makes a whole class look like it's failing.
         row = MasteryEstimate(world_id=world.id, player_id=player.id, lo_id=lo_id,
-                              score=0, attempts=0)
+                              score=500, attempts=0)
         db.add(row)
         await db.flush()
-    # Recency-weighted EMA on a 0-1000 scale; wrong-then-right counts as growth.
-    alpha = 0.4
+    # Recency-weighted EMA on a 0-1000 scale; early answers move the estimate
+    # more (the prior is weak evidence), later ones settle to steady tracking.
+    # Wrong-then-right still counts as growth.
+    alpha = max(0.4, 0.6 - 0.1 * row.attempts)
     row.score = round((1 - alpha) * row.score + alpha * score * 10)
     row.attempts += 1
 

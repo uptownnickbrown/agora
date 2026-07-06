@@ -170,3 +170,51 @@ def test_seeder_is_importable_after_path_fix():
     worker._ensure_seeder_importable()
     seed = importlib.import_module("scripts.seed_midcourse")
     assert callable(seed.main)
+
+
+async def test_demo_visitor_lands_furnished_and_hidden(client, session_factory):
+    """A demo visitor drops into the MIDDLE of the course: stocked shop,
+    facilities, mastery history, a streak — and stays out of the instructor's
+    heatmap/gradebook/roster (the curated class, not a visitor trail)."""
+    import uuid as _uuid
+
+    from app.models import World
+    from tests.conftest import hdr, register, make_world
+
+    prof = await register(client, name="Prof Demo")
+    world = await make_world(client, prof["token"])
+    async with session_factory() as db:
+        async with db.begin():
+            w = await db.get(World, _uuid.UUID(world["world_id"]))
+            w.config = {**(w.config or {}), "is_demo": True}
+            w.current_week, w.world_day = 4, 25
+
+    r = await client.post("/demo/student")
+    assert r.status_code == 200, r.text
+    visitor = r.json()
+    vh = hdr(visitor["token"])
+    wid = visitor["world_id"]
+
+    state = (await client.get(f"/worlds/{wid}/state", headers=vh)).json()
+    assert state["player"]["coins"] > 200, "mid-course purse, not day-one"
+    assert state["facilities"], "facilities already humming"
+    assert state["achievements"], "a little swagger"
+    shop = (await client.get(f"/worlds/{wid}/shop", headers=vh)).json()
+    assert shop and any(l["sold_total"] > 0 for l in shop)
+    mastery = (await client.get(f"/worlds/{wid}/tutor/mastery", headers=vh)).json()
+    assessed = [m for m in mastery if m["pct"] is not None]
+    assert len(assessed) >= 6, "a realistic mastery history"
+    assert any(m["pct"] <= 40 for m in assessed), "one honest wobble to practice"
+
+    # ...and none of it leaks into the instructor's views.
+    ph = hdr(prof["token"])
+    heat = (await client.get(f"/worlds/{wid}/instructor/heatmap",
+                             headers=ph)).json()
+    names = [s["merchant"] for s in heat["students"]]
+    assert visitor["merchant"] not in names
+    grades = (await client.get(f"/worlds/{wid}/instructor/gradebook",
+                               headers=ph)).json()
+    assert all(g["merchant"] != visitor["merchant"] for g in grades)
+    dash = (await client.get(f"/worlds/{wid}/instructor/dashboard",
+                             headers=ph)).json()
+    assert all(p["merchant"] != visitor["merchant"] for p in dash["roster"])

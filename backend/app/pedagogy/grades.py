@@ -12,14 +12,21 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import MasteryEstimate, Player, PlayerDayStat, User, World
-from .bank import LEARNING_OBJECTIVES
+from .bank import LEARNING_OBJECTIVES, QUESTIONS
 
 PARTICIPATION_TARGET_PER_DAY = 6  # points/day that earn full participation credit
 
 
+def _roster_filter():
+    """Instructor views show enrolled students only — no NPCs, and no demo
+    drop-in visitors (they'd pile up as ghost rows in a shared demo world)."""
+    return (~Player.is_npc, ~Player.is_visitor)
+
+
 async def gradebook(db: AsyncSession, world: World) -> list[dict]:
     players = (
-        await db.scalars(select(Player).where(Player.world_id == world.id, ~Player.is_npc))
+        await db.scalars(select(Player).where(Player.world_id == world.id,
+                                              *_roster_filter()))
     ).all()
     weights = (world.config or {}).get("grade_weights", {"participation": 0.5, "mastery": 0.5})
     days_elapsed = max(1, world.world_day)
@@ -79,9 +86,12 @@ async def gradebook_csv(db: AsyncSession, world: World) -> str:
 
 
 async def mastery_heatmap(db: AsyncSession, world: World) -> dict:
-    """LO × student grid for the instructor dashboard."""
+    """LO × student grid for the instructor dashboard, with per-objective
+    class aggregates and sample assessment items for the drill-down panel."""
     players = (
-        await db.scalars(select(Player).where(Player.world_id == world.id, ~Player.is_npc))
+        await db.scalars(select(Player).where(Player.world_id == world.id,
+                                              *_roster_filter())
+                         .order_by(Player.merchant_name))
     ).all()
     relevant = [lo for lo in LEARNING_OBJECTIVES.values() if lo.week <= world.current_week]
     grid = []
@@ -93,12 +103,31 @@ async def mastery_heatmap(db: AsyncSession, world: World) -> dict:
             )
         ).all()
         by_lo = {m.lo_id: m.score for m in rows}
+        scores = {lo.id: by_lo.get(lo.id) for lo in relevant}
+        assessed = [s for s in scores.values() if s is not None]
         grid.append({
             "merchant": p.merchant_name,
-            "scores": {lo.id: by_lo.get(lo.id) for lo in relevant},
+            "scores": scores,
+            "avg": round(sum(assessed) / len(assessed) / 10) if assessed else None,
+            "assessed": len(assessed),
         })
+
+    los = []
+    for lo in relevant:
+        cells = [s["scores"][lo.id] for s in grid if s["scores"][lo.id] is not None]
+        items = [q for q in QUESTIONS.values() if lo.id in q.los]
+        los.append({
+            "id": lo.id, "text": lo.text, "short": lo.short,
+            "bloom": lo.bloom, "week": lo.week,
+            "class_avg": round(sum(cells) / len(cells) / 10) if cells else None,
+            "assessed": len(cells),
+            "item_count": len(items),
+            "sample_items": [q.prompt for q in items
+                             if q.kind == "mcq"][:2],
+        })
+    all_cells = [c for s in grid for c in s["scores"].values() if c is not None]
     return {
-        "los": [{"id": lo.id, "text": lo.text, "short": lo.short,
-                 "bloom": lo.bloom, "week": lo.week} for lo in relevant],
+        "los": los,
         "students": grid,
+        "class_avg": round(sum(all_cells) / len(all_cells) / 10) if all_cells else None,
     }

@@ -132,6 +132,10 @@ class Player(TimestampMixin, Base):
     effort: Mapped[int] = mapped_column(Integer, default=20)
     aptitude_good: Mapped[str | None] = mapped_column(String(40))
     is_npc: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Demo drop-ins: they play like students but stay out of the instructor's
+    # roster, heatmap, and gradebook, which show the curated seeded class.
+    is_visitor: Mapped[bool] = mapped_column(Boolean, default=False,
+                                             server_default="false")
     bankrupt_resets: Mapped[int] = mapped_column(Integer, default=0)
     last_active_day: Mapped[int] = mapped_column(Integer, default=0)
 

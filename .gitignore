@@ -16,3 +16,5 @@ qa/after*/
 qa/new*/
 qa/demo*/
 qa/prod*/
+qa/feedback/
+qa/assessment-feedback/

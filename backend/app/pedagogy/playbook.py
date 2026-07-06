@@ -14,6 +14,7 @@ from ..models import (
     DetectedMoment,
     Intervention,
     MasteryEstimate,
+    Player,
     PriceSnapshot,
     World,
 )
@@ -83,21 +84,29 @@ async def build_playbook(db: AsyncSession, world: World, week: int | None = None
         )
     ).all()
 
-    # Misconceptions: LOs with the lowest average mastery + most-missed questions.
+    # Misconceptions: LOs with the lowest average mastery + most-missed
+    # questions. Enrolled students only — demo visitors' practice answers
+    # must not tilt the class picture.
     lo_rows = (
         await db.execute(
             select(MasteryEstimate.lo_id, func.avg(MasteryEstimate.score))
-            .where(MasteryEstimate.world_id == world.id)
+            .join(Player, Player.id == MasteryEstimate.player_id)
+            .where(MasteryEstimate.world_id == world.id,
+                   ~Player.is_npc, ~Player.is_visitor)
             .group_by(MasteryEstimate.lo_id)
         )
     ).all()
-    weak_los = sorted(lo_rows, key=lambda r: r[1])[:4]
+    # Scope to objectives taught by this playbook's week — a stray attempt on
+    # a week-6 item must not surface "Corrective taxes" in a week-3 lecture.
+    taught = {lo.id for lo in LEARNING_OBJECTIVES.values() if lo.week <= week}
+    weak_los = sorted((r for r in lo_rows if r[0] in taught),
+                      key=lambda r: r[1])[:4]
 
     concept, base_questions = WEEK_CONCEPTS.get(week, ("", []))
     # First sentence only: detector summaries carry their own teaching
     # commentary, which would double up against the question.
     moment_questions = [
-        f"Day {m.world_day}: {m.summary.split('. ')[0].rstrip('.')}. "
+        f"Day {m.world_day}: {_first_sentence(m.summary)}. "
         f"Which model explains it?"
         for m in moments[:3]
     ]
@@ -121,6 +130,18 @@ async def build_playbook(db: AsyncSession, world: World, week: int | None = None
     }
     playbook["markdown"] = await _render_markdown(world, playbook)
     return playbook
+
+
+def _first_sentence(text: str) -> str:
+    """First sentence, robust to abbreviated names: 'Jordan P. bought 18…'
+    must not truncate to 'Jordan P'."""
+    parts = text.split(". ")
+    head = parts[0]
+    i = 1
+    while len(head) < 40 and i < len(parts):  # too short to be a sentence
+        head += ". " + parts[i]
+        i += 1
+    return head.rstrip(".")
 
 
 def _moved(pts: list[dict]) -> bool:
@@ -171,6 +192,8 @@ async def _render_markdown(world: World, pb: dict) -> str:
     for s in pb["suggested_next"]:
         lines.append(f"- {s}")
     md = "\n".join(lines)
+    if (world.config or {}).get("is_demo"):
+        return md  # demo worlds never spend tokens; marquee weeks are canned
     return await _polish(md) or md
 
 

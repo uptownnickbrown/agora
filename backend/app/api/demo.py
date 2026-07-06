@@ -18,6 +18,7 @@ from ..deps import DB
 from ..models import World
 from ..services import auth as auth_svc
 from ..services import worlds as worlds_svc
+from ..services.demo_seed import furnish_visitor
 
 VISITOR_FIRST_NAMES = [
     "Alex", "Bea", "Casey", "Dana", "Eli", "Farah", "Gus", "Hana", "Ira",
@@ -66,6 +67,11 @@ async def demo_student(db: DB):
     else:
         raise HTTPException(500, "could not mint a visitor — try again")
     player = await worlds_svc.join_world(db, user, world.join_code)
+    # Visitors drop into the MIDDLE of a course, so they get a mid-course
+    # life: a stocked shop, facilities, mastery history, a streak. Flagged
+    # is_visitor so the instructor's roster and heatmap stay the curated class.
+    player.is_visitor = True
+    await furnish_visitor(db, world, player)
     session = await auth_svc._create_session(db, user)
     return {"token": session.token, "world_id": str(world.id),
             "merchant": player.merchant_name, "role": "student"}
