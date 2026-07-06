@@ -62,9 +62,13 @@ async def bot_tutor_check(db, world, bot: Bot) -> None:
             % len(q.choices)
     await answer_check(db, world, player, q.id, str(answer))
 
-DB_URL = os.environ.get(
-    "AGORA_DATABASE_URL", "postgresql+asyncpg://agora:agora@localhost:5432/agora"
-)
+# Use the app's normalized URL, not the raw env var: prod sets
+# AGORA_DATABASE_URL as `postgresql://…` (no driver), which SQLAlchemy would
+# route to psycopg2 (not installed) instead of asyncpg. get_settings() applies
+# the same `+asyncpg` normalization the app uses everywhere.
+from app.config import get_settings  # noqa: E402
+
+DB_URL = get_settings().database_url
 PASSWORD = "agora-qa"
 
 
