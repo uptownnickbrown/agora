@@ -6,6 +6,8 @@
 Cron wiring runs every active world hourly and closes those whose local
 midnight has passed; v1 keeps it simple with world-local day length = real day.
 """
+import os
+import sys
 from datetime import date
 
 from arq import cron
@@ -19,6 +21,28 @@ from .services.close import run_daily_close
 from .services.npc import refresh_npc_orders
 
 _factory = None
+
+
+def _ensure_seeder_importable() -> None:
+    """demo_reset seeds via scripts/seed_midcourse.py, which imports tests/bots.py.
+    Neither `scripts` nor `tests` is installed as a package (pyproject ships only
+    `app*`/`sim*`), so when the worker runs from an installed copy — `arq
+    app.worker.WorkerSettings` resolves `app` out of site-packages, NOT the
+    source tree — `from scripts…` raises ImportError. That import lived inside a
+    caught try, so the nightly demo rotation failed silently in prod for days.
+
+    Put the project root (the dir holding scripts/ AND tests/) on sys.path.
+    First candidate is the working directory (the Dockerfile's WORKDIR /srv in
+    prod, backend/ under pytest); __file__-relative candidates cover odd cwds."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    candidates = [os.getcwd(), os.path.dirname(here),
+                  os.path.dirname(os.path.dirname(here))]
+    for root in candidates:
+        if (os.path.isdir(os.path.join(root, "scripts"))
+                and os.path.isdir(os.path.join(root, "tests"))):
+            if root not in sys.path:
+                sys.path.insert(0, root)
+            return
 
 
 def _session_factory():
@@ -111,6 +135,7 @@ async def demo_reset(ctx: dict, force: bool = False) -> int:
             return 0
 
     try:
+        _ensure_seeder_importable()
         from scripts.seed_midcourse import main as seed_main
 
         new_id = await seed_main(25, f"demo{time.strftime('%m%d%H%M%S')}",

@@ -9,8 +9,9 @@ from sqlalchemy import select
 
 from ..bus import bus
 from ..deps import get_db
-from ..models import Player
+from ..models import Player, World
 from ..services.auth import resolve_session
+from ..services.worlds import instructor_for_world
 
 router = APIRouter()
 
@@ -26,7 +27,14 @@ async def world_feed(websocket: WebSocket, world_id: uuid.UUID):
                 select(Player).where(Player.world_id == world_id,
                                      Player.user_id == user.id)
             )
-            authorized = player is not None or user.is_instructor or user.is_platform_admin
+            # A student needs a player in THIS world; an instructor must teach
+            # THIS world (not merely be an instructor somewhere) — otherwise any
+            # instructor could tail any section's live trade feed (IDOR).
+            authorized = player is not None or user.is_platform_admin
+            if not authorized and user.is_instructor:
+                world = await db.get(World, world_id)
+                authorized = (world is not None
+                              and await instructor_for_world(db, world) == user.id)
     if not authorized:
         await websocket.close(code=4401)
         return

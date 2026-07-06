@@ -152,3 +152,21 @@ async def test_ops_rotate_endpoint(client, monkeypatch):
                           headers={"X-Agora-Ops-Token": "sekrit"})
     assert r.status_code == 200 and r.json()["enqueued"] == "job-1"
     assert enqueued == [("demo_reset", {"force": True})]
+
+
+def test_seeder_is_importable_after_path_fix():
+    """Regression for the prod bug where demo_reset silently failed: scripts/
+    and tests/ aren't installed packages, so the seeder import raised
+    ImportError (caught, logged, never rotated). _ensure_seeder_importable must
+    make the real import resolve."""
+    import importlib
+    import sys
+
+    from app import worker
+
+    # simulate the installed-copy case where the source root isn't on the path
+    for mod in ("scripts", "scripts.seed_midcourse"):
+        sys.modules.pop(mod, None)
+    worker._ensure_seeder_importable()
+    seed = importlib.import_module("scripts.seed_midcourse")
+    assert callable(seed.main)

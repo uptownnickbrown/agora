@@ -63,6 +63,21 @@ def test_websocket_trade_feed(tmp_path):
         refused = True
     assert refused
 
+    # an instructor of ANOTHER world cannot tail this world's feed (IDOR guard)
+    other = client.post("/auth/register", json={
+        "email": "prof-other@ws.edu", "display_name": "Other"}).json()
+    oh = {"Authorization": f"Bearer {other['token']}"}
+    client.post("/instructor/worlds", headers=oh, json={
+        "course_title": "E2", "section_name": "Z"})  # makes them an instructor
+    try:
+        with client.websocket_connect(
+                f"/worlds/{wid}/ws?token={other['token']}") as ws:
+            ws.receive_json()
+        cross_refused = False
+    except Exception:
+        cross_refused = True
+    assert cross_refused, "an outside instructor must not access this world's feed"
+
 
 def test_admin_endpoints(tmp_path):
     url = _setup(tmp_path)

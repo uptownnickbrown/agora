@@ -56,13 +56,25 @@ async def gradebook(db: AsyncSession, world: World) -> list[dict]:
     return rows
 
 
+def _csv_safe(value):
+    """Defuse spreadsheet formula injection: a cell a user controls (a student's
+    display name) that starts with = + - @ or a control char is treated as a
+    formula by Excel/Sheets on open. Prefix such cells with a single quote so
+    they render as literal text. Non-strings pass through untouched."""
+    if isinstance(value, str) and value[:1] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + value
+    return value
+
+
 async def gradebook_csv(db: AsyncSession, world: World) -> str:
     rows = await gradebook(db, world)
+    fields = ["email", "merchant", "participation", "mastery", "grade",
+              "los_assessed", "los_total"]
     buf = io.StringIO()
-    writer = csv.DictWriter(buf, fieldnames=["email", "merchant", "participation",
-                                             "mastery", "grade", "los_assessed", "los_total"])
+    writer = csv.DictWriter(buf, fieldnames=fields)
     writer.writeheader()
-    writer.writerows(rows)
+    for row in rows:
+        writer.writerow({k: _csv_safe(row[k]) for k in fields})
     return buf.getvalue()
 
 

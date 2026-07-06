@@ -633,3 +633,28 @@ async def test_bank_depth_and_lo_rigor():
         assert len(lo.text) > 60, f"{lo.id} objective reads too thin"
         assert lo.chapter in CHAPTER_SUMMARIES, f"{lo.id} lacks textbook grounding"
     assert len(QUESTIONS) >= 130
+
+
+async def test_gradebook_csv_defuses_formula_injection(game, session_factory):
+    import uuid as _uuid
+
+    from sqlalchemy import update
+
+    from app.models import Player
+
+    client, wid = game["client"], game["world_id"]
+    prof, alice = game["instructor"], game["students"][0]
+    # a student whose display name is a spreadsheet formula
+    async with session_factory() as db:
+        async with db.begin():
+            await db.execute(update(Player).where(
+                Player.id == _uuid.UUID(alice["player_id"])).values(
+                merchant_name="=cmd|'/c calc'!A1"))
+    r = await client.get(f"/worlds/{wid}/instructor/gradebook.csv",
+                         headers=hdr(prof["token"]))
+    assert r.status_code == 200
+    # the dangerous cell is present but neutralized with a leading quote
+    assert "'=cmd|'/c calc'!A1" in r.text
+    for line in r.text.splitlines():
+        for cell in line.split(","):
+            assert not cell.lstrip('"').startswith(("=", "+", "@")), cell

@@ -5,7 +5,12 @@ COPY app ./app
 COPY sim ./sim
 COPY alembic.ini ./
 COPY alembic ./alembic
-# tests/bots.py + scripts/seed_midcourse.py power the nightly demo reset
+# tests/bots.py + scripts/seed_midcourse.py power the nightly demo reset.
+# They aren't installed as packages, so put the source root on the import path
+# deterministically — the worker's demo_reset does `from scripts.seed_midcourse
+# import main`, and `arq app.worker...` resolves `app` from site-packages, not
+# /srv, so cwd alone can't be trusted to make scripts/ + tests/ importable.
+ENV PYTHONPATH=/srv
 COPY tests ./tests
 COPY scripts ./scripts
 RUN pip install --no-cache-dir .
