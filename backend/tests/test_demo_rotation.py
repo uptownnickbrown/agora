@@ -218,3 +218,42 @@ async def test_demo_visitor_lands_furnished_and_hidden(client, session_factory):
     dash = (await client.get(f"/worlds/{wid}/instructor/dashboard",
                              headers=ph)).json()
     assert all(p["merchant"] != visitor["merchant"] for p in dash["roster"])
+
+
+async def test_crons_ignore_mid_seed_candidates(client, session_factory,
+                                                monkeypatch):
+    """fast_tick/daily-close must never touch a demo CANDIDATE: a candidate
+    is mid-seed, and concurrent NPC matching deadlocks against the seeder's
+    player-row locks (how the 2026-07-06 rotation died). email_sweep must
+    not mail a candidate's instructor either."""
+    import uuid as _uuid
+
+    from app import worker
+    from app.models import World
+    from tests.conftest import make_world, register
+
+    monkeypatch.setattr(worker, "_factory", session_factory)
+
+    prof = await register(client, name="Prof Candidate")
+    w = await make_world(client, prof["token"])
+    async with session_factory() as db:
+        async with db.begin():
+            world = await db.get(World, _uuid.UUID(w["world_id"]))
+            world.config = {**(world.config or {}),
+                            "demo_candidate": True,
+                            "digest_due_week": 2}
+
+    assert w["world_id"] not in [
+        str(wid) for wid in await worker._live_world_ids(session_factory)]
+
+    sent = []
+    from app.services import email as email_svc
+
+    async def no_send(db, msg, **kw):
+        sent.append(msg)
+
+    monkeypatch.setattr(email_svc, "send_logged", no_send)
+    from app.services.digest import process_due_digests
+
+    await process_due_digests(session_factory)
+    assert sent == [], "candidate worlds must not email anyone mid-seed"

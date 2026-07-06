@@ -53,13 +53,20 @@ def _session_factory():
 
 
 async def _live_world_ids(factory) -> list:
+    """Worlds the scheduled jobs should touch. Demo CANDIDATES are excluded:
+    a candidate is mid-seed and belongs to the seeder alone — a fast_tick
+    posting NPC orders into it deadlocks against the seeder's row locks
+    (both lock player rows during matching), which is exactly how the
+    2026-07-06 rotation died."""
     async with factory() as db:
-        return list(
-            await db.scalars(
-                select(World.id).where(
+        rows = (
+            await db.execute(
+                select(World.id, World.config).where(
                     World.state.in_(["onboarding", "active", "tournament"]))
             )
-        )
+        ).all()
+    return [wid for wid, config in rows
+            if not (config or {}).get("demo_candidate")]
 
 
 async def daily_market_close(ctx: dict) -> int:
@@ -158,8 +165,9 @@ async def demo_reset(ctx: dict, force: bool = False) -> int:
                     w.state = "epilogue"  # retire: stops close/tick attention
                 elif (config.get("demo_candidate")
                       and w.created_at
-                      and aware(w.created_at) < now - timedelta(hours=20)):
-                    # leftovers from failed seeds: quietly retire
+                      and aware(w.created_at) < now - timedelta(hours=2)):
+                    # Leftovers from failed seeds: quietly retire. A healthy
+                    # candidate lives for minutes, so 2h is generous.
                     w.state = "epilogue"
     log.info("demo rotation complete: world %s is live", new_id)
     return 1

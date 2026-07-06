@@ -205,8 +205,8 @@ async def _process_one(factory, wid) -> int:
         due = config.get("digest_due_week") or 0
         if due <= config.get("digest_sent_week", 0):
             return 0
-        if (world.config or {}).get("is_demo"):
-            msg = None  # demo worlds never email anyone
+        if config.get("is_demo") or config.get("demo_candidate"):
+            msg = None  # demo worlds (and mid-seed candidates) never email
         elif not config.get("email_digest", True):
             msg = None  # opted out: stamp without sending so no backlog grows
         else:
