@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     # Tutor model tiers (DECISIONS.md #7)
     model_classify: str = "claude-haiku-4-5"
     model_tutor: str = "claude-sonnet-4-6"
+    # Grading a one-sentence answer against an explicit rubric is squarely
+    # Haiku work, and the latency difference is felt on every single check.
+    model_grader: str = "claude-haiku-4-5"
     model_playbook: str = "claude-opus-4-8"
 
     model_config = {"env_prefix": "AGORA_", "protected_namespaces": ()}

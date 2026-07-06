@@ -20,9 +20,15 @@ export function CheckCard({ wid, lo, notify, refresh, compact, onAnswered }: {
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState<any>(null);
   const [busy, setBusy] = useState(false);
+  // The refine loop: follow-ups on a graded written answer, re-graded in
+  // context. Each entry is one round of the exchange.
+  const [thread, setThread] = useState<{ me: string; out: any }[]>([]);
+  const [followup, setFollowup] = useState("");
+  const [refining, setRefining] = useState(false);
 
   const load = useCallback(async () => {
     setFeedback(null); setAnswer(""); setCheck(null);
+    setThread([]); setFollowup("");
     try {
       const c = await api.get(
         `/worlds/${wid}/tutor/check${lo ? `?lo=${encodeURIComponent(lo)}` : ""}`);
@@ -30,6 +36,21 @@ export function CheckCard({ wid, lo, notify, refresh, compact, onAnswered }: {
     } catch (e: any) { notify?.(e.message, true); }
   }, [wid, lo, notify]);
   useEffect(() => { load(); }, [load]);
+
+  async function refine() {
+    if (!followup.trim() || refining) return;
+    setRefining(true);
+    try {
+      const out = await api.post(`/worlds/${wid}/tutor/check/refine`, {
+        question_id: check.question_id, answer: followup,
+      });
+      setThread((t) => [...t, { me: followup, out }]);
+      setFollowup("");
+      refresh?.();
+      onAnswered?.(out);
+    } catch (e: any) { notify?.(e.message, true); }
+    setRefining(false);
+  }
 
   async function submit() {
     if (!check || busy) return;
@@ -39,9 +60,11 @@ export function CheckCard({ wid, lo, notify, refresh, compact, onAnswered }: {
         question_id: check.question_id, answer,
       });
       setFeedback(out);
+      // Refresh on every answer, not just effort gains — the Study's mastery
+      // meters should move the moment the grade lands.
+      refresh?.();
       if (out.effort_gained > 0) {
-        notify?.(`+${out.effort_gained} effort — study pays.`);
-        refresh?.();
+        notify?.(`+${out.effort_gained} effort. Study pays.`);
       }
       onAnswered?.(out);
     } catch (e: any) { setFeedback({ feedback: e.message, correct: false, score: 0 }); }
@@ -60,6 +83,10 @@ export function CheckCard({ wid, lo, notify, refresh, compact, onAnswered }: {
                        borderColor: "var(--gold)" }}>
           Freshly penned by Pip
         </span>
+      )}
+      {check.bloom && !compact && (
+        <span className="bloom-chip" title="This item's Bloom level">
+          {check.bloom}</span>
       )}
       <p style={{ margin: "6px 0", fontWeight: 600 }}>{check.prompt}</p>
       {check.diagram && (
@@ -89,20 +116,50 @@ export function CheckCard({ wid, lo, notify, refresh, compact, onAnswered }: {
         <button style={{ marginTop: 8 }} disabled={answer === "" || busy}
                 onClick={submit}>{busy ? "Grading…" : "Answer"}</button>
       ) : (
-        <div className="msg tutor" style={{ marginTop: 8, maxWidth: "100%" }}>
-          {feedback.correct && <Confetti />}
-          <b className={feedback.correct ? "heat-good" : "heat-bad"}>
-            {feedback.correct ? `✓ ${feedback.score}/100` : `✗ ${feedback.score}/100`}
-          </b>{" "}
-          <InlineMd text={feedback.feedback} />
-          {feedback.effort_gained > 0 && (
-            <div className="heat-good" style={{ marginTop: 4 }}>
-              +{feedback.effort_gained} effort for today's first correct answer
+        <>
+          <div className="msg tutor" style={{ marginTop: 8, maxWidth: "100%" }}>
+            {feedback.correct && thread.length === 0 && <Confetti />}
+            <b className={feedback.correct ? "heat-good" : "heat-bad"}>
+              {feedback.correct ? `✓ ${feedback.score}/100` : `✗ ${feedback.score}/100`}
+            </b>{" "}
+            <InlineMd text={feedback.feedback} />
+            {feedback.effort_gained > 0 && (
+              <div className="heat-good" style={{ marginTop: 4 }}>
+                +{feedback.effort_gained} effort for today's first correct answer
+              </div>
+            )}
+          </div>
+          {thread.map((t, i) => (
+            <React.Fragment key={i}>
+              <div className="msg user" style={{ marginTop: 6, marginLeft: "auto" }}>
+                {t.me}</div>
+              <div className="msg tutor" style={{ marginTop: 6, maxWidth: "100%" }}>
+                {t.out.correct && <Confetti />}
+                <b className={t.out.correct ? "heat-good" : "heat-bad"}>
+                  {t.out.correct ? "✓" : "✗"} {t.out.score}/100
+                </b>{" "}
+                <InlineMd text={t.out.feedback} />
+              </div>
+            </React.Fragment>
+          ))}
+          {check.kind === "free" &&
+            (thread.length === 0 || thread[thread.length - 1].out.rounds_left > 0) && (
+            <div style={{ marginTop: 8 }}>
+              <textarea rows={2} style={{ width: "100%" }} value={followup}
+                        placeholder="Not done? Sharpen your answer or ask Pip why…"
+                        onChange={(e) => setFollowup(e.target.value)} />
+              <div className="row" style={{ marginTop: 4, alignItems: "center" }}>
+                <button className="quiet" disabled={!followup.trim() || refining}
+                        onClick={refine}>
+                  {refining ? "Re-grading…" : "Send to Pip"}</button>
+                <span className="muted" style={{ fontSize: 12 }}>
+                  Refining can raise your score — growth counts.</span>
+              </div>
             </div>
           )}
           <div><button className="quiet" style={{ marginTop: 6 }}
                        onClick={load}>Another</button></div>
-        </div>
+        </>
       )}
     </div>
   );
@@ -238,7 +295,7 @@ export function PipDock({ wid, day, nudge, checkAvailable, inStudy, onGoStudy }:
             <div className="pip-chat" ref={scrollRef}>
               {history.length === 0 && (
                 <div className="msg tutor">
-                  Coo! Ask me anything about your markets. I'll guide; I won't trade
+                  Ask me anything about your markets. I'll guide; I won't trade
                   for you. A pigeon has principles.
                 </div>
               )}
@@ -346,7 +403,7 @@ export function Puzzle({ wid, notify, refresh }: {
         }
       } else if (out.result === "one_away") {
         setShakeSel(true); setTimeout(() => setShakeSel(false), 500);
-        notify("One away! Coo… so close.", true);
+        notify("One away! So close.", true);
       } else if (out.result === "already_guessed") {
         notify("You already tried that set.", true);
       } else {

@@ -54,6 +54,15 @@ async def answer_check(body: AnswerIn, db: DB, world: WorldDep, player: CurrentP
     return await tutor_svc.answer_check(db, world, player, body.question_id, body.answer)
 
 
+@router.post("/worlds/{world_id}/tutor/check/refine")
+async def refine_check(body: AnswerIn, db: DB, world: WorldDep,
+                       player: CurrentPlayer):
+    """Follow-up on a graded free response: refine the answer or ask a
+    clarifying question; Pip re-grades with the whole exchange in view."""
+    return await tutor_svc.refine_check(db, world, player,
+                                        body.question_id, body.answer)
+
+
 @router.get("/worlds/{world_id}/tutor/mastery")
 async def my_mastery(db: DB, world: WorldDep, player: CurrentPlayer):
     rows = (

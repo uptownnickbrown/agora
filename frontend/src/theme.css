@@ -513,16 +513,19 @@ table.book td { padding: 3.5px 8px; text-align: right; }
   .tour-card { bottom: calc(92px + env(safe-area-inset-bottom)); }
 }
 
-/* -- the Study: mastery meters -- */
+/* -- the Study: mastery meters. Two-line rows: the full objective reads
+      across the whole width (1-2 lines instead of a 4-line ribbon), with the
+      meter, score, and Practice on a compact line beneath. -- */
 .mastery-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 6px 8px; border-radius: 10px; cursor: pointer;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
+  padding: 7px 8px; border-radius: 10px; cursor: pointer;
   transition: background 0.12s ease;
 }
 .mastery-row:hover { background: rgba(59, 48, 35, 0.05); }
 .mastery-row.active { background: #fbf6e7; box-shadow: 0 0 0 2px var(--gold); }
-.mastery-row .lo-text { flex: 1 1 200px; font-size: 13px; min-width: 0; }
-.mastery-row .mastery-meter { flex: 0 0 110px; }
+.mastery-row .lo-text { flex: 1 1 100%; font-size: 13.5px; line-height: 1.4;
+                        min-width: 0; }
+.mastery-row .mastery-meter { flex: 1 1 140px; }
 .mastery-row .lo-pct {
   flex: 0 0 40px; text-align: right; font-weight: 700; font-size: 12.5px;
   font-variant-numeric: tabular-nums;

@@ -18,9 +18,11 @@ orientation an agent needs to work in the code safely.
     `production`, `digest` (Monday Brief email), `demo_seed` (furnishes demo
     visitors with a mid-course life; they're `Player.is_visitor` and hidden
     from instructor views), `worlds`, `auth`.
-  - `app/pedagogy/` — `tutor` (Pip chat + tutor checks + LLM grading + on-the-fly
-    question generation), `bank` (learning objectives + question bank),
-    `puzzles`, `grades`, `playbook`, `demo_artifacts` (hand-polished canned
+  - `app/pedagogy/` — `tutor` (Pip chat + tutor checks + LLM grading + refine
+    loop + on-the-fly question generation), `bank` (learning objectives +
+    question bank), `bank_explanations` (committed per-item answer
+    explanations; regen via `scripts/gen_explanations.py`), `puzzles`,
+    `grades`, `playbook`, `demo_artifacts` (hand-polished canned
     playbook/brief for the pinned-seed demo world — regenerate if sim balance
     changes), `openstax` (committed CC-BY course text).
   - `app/template.py` — the canonical game definition (goods, recipes,

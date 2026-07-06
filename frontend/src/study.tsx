@@ -40,7 +40,7 @@ export function Study({ state, wid, notify, refresh }: {
 
   return (
     <div className="row">
-      <div className="panel grow" style={{ maxWidth: 560 }}>
+      <div className="panel grow" style={{ maxWidth: 660 }}>
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
           <Asset slot="pip/pip_idle" glyph="🐦" size={54} alt="Professor Pip" />
           <div>

@@ -658,3 +658,38 @@ async def test_gradebook_csv_defuses_formula_injection(game, session_factory):
     for line in r.text.splitlines():
         for cell in line.split(","):
             assert not cell.lstrip('"').startswith(("=", "+", "@")), cell
+
+
+async def test_refine_loop_on_free_response(game):
+    """After a graded written answer, the student can follow up and be
+    re-graded (offline fallback: the prior score stands, kindly)."""
+    client, wid = game["client"], game["world_id"]
+    alice = game["students"][0]
+
+    # refine before answering anything -> a clear error
+    r = await client.post(f"/worlds/{wid}/tutor/check/refine",
+                          headers=hdr(alice["token"]),
+                          json={"question_id": "w1-free-1", "answer": "more?"})
+    assert r.status_code == 400
+
+    r = await client.post(f"/worlds/{wid}/tutor/check", headers=hdr(alice["token"]),
+                          json={"question_id": "w1-free-1",
+                                "answer": "prices differ between towns"})
+    first = r.json()
+    assert r.status_code == 200 and first["score"] > 0
+
+    r = await client.post(f"/worlds/{wid}/tutor/check/refine",
+                          headers=hdr(alice["token"]),
+                          json={"question_id": "w1-free-1",
+                                "answer": "buying low and selling high moves "
+                                          "goods to where they're valued more"})
+    assert r.status_code == 200, r.text
+    out = r.json()
+    assert out["score"] == first["score"]  # offline: prior mark stands
+    assert "feedback" in out and out["feedback"]
+
+    # MCQs don't refine
+    r = await client.post(f"/worlds/{wid}/tutor/check/refine",
+                          headers=hdr(alice["token"]),
+                          json={"question_id": "w1-opp-1", "answer": "why?"})
+    assert r.status_code == 400

@@ -217,30 +217,59 @@ export function Diagram({ spec, width = 360, height = 250 }: {
                 fill="#b5485d" textAnchor="end">{spec.hline.p}</text>
         </g>
       )}
-      {/* curves */}
-      {(spec.lines || []).map((l: any, i: number) => {
-        const pts = l.pts.map(([x, y]: number[]) => `${X(x)},${Y(y)}`).join(" ");
-        const [lx, ly] = l.pts[l.pts.length - 1];
+      {/* curves + points. Labels go through one shared placement pass:
+          rising lines label above their end, falling ones below, everything
+          clamps inside the frame, and any two labels that would collide get
+          nudged apart — no more D' sitting on its own dashes or E on P. */}
+      {(() => {
+        const placed: { x: number; y: number }[] = [];
+        const place = (x: number, y: number): [number, number] => {
+          x = Math.min(x, width - 16);
+          y = Math.max(padT + 8, Math.min(y, height - padB - 2));
+          for (const l of placed) {
+            if (Math.abs(l.x - x) < 26 && Math.abs(l.y - y) < 13) {
+              y = l.y + (y >= l.y ? 13 : -13);
+            }
+          }
+          placed.push({ x, y });
+          return [x, y];
+        };
         return (
-          <g key={`l${i}`}>
-            <polyline points={pts} fill="none" stroke={color(l.color)}
-                      strokeWidth={2.4} strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeDasharray={l.dashed ? "7 5" : undefined} />
-            <text x={X(lx) + 5} y={Y(ly) + 4} fontSize={12} fontWeight={700}
-                  fill={color(l.color)}>{l.label}</text>
-          </g>
+          <>
+            {(spec.lines || []).map((l: any, i: number) => {
+              const pts = l.pts.map(([x, y]: number[]) => `${X(x)},${Y(y)}`).join(" ");
+              const [lx, ly] = l.pts[l.pts.length - 1];
+              const [, py] = l.pts[l.pts.length - 2] ?? l.pts[0];
+              const rising = ly >= py;
+              const [tx, ty] = place(X(lx) + 5, Y(ly) + (rising ? -5 : 13));
+              return (
+                <g key={`l${i}`}>
+                  <polyline points={pts} fill="none" stroke={color(l.color)}
+                            strokeWidth={2.4} strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeDasharray={l.dashed ? "7 5" : undefined} />
+                  <text x={tx} y={ty} fontSize={12} fontWeight={700}
+                        fill={color(l.color)} stroke="#fffdf6"
+                        strokeWidth={3} paintOrder="stroke">{l.label}</text>
+                </g>
+              );
+            })}
+            {(spec.points || []).map((p: any, i: number) => {
+              const [tx, ty] = p.label ? place(X(p.q) + 8, Y(p.p) - 7) : [0, 0];
+              return (
+                <g key={`p${i}`}>
+                  <circle cx={X(p.q)} cy={Y(p.p)} r={4} fill="#d9a93f"
+                          stroke="#3b3023" strokeWidth={1.2} />
+                  {p.label && <text x={tx} y={ty} fontSize={12}
+                                    fontWeight={700} fill="#3b3023"
+                                    stroke="#fffdf6" strokeWidth={3}
+                                    paintOrder="stroke">{p.label}</text>}
+                </g>
+              );
+            })}
+          </>
         );
-      })}
-      {/* named points (equilibria etc.) */}
-      {(spec.points || []).map((p: any, i: number) => (
-        <g key={`p${i}`}>
-          <circle cx={X(p.q)} cy={Y(p.p)} r={4} fill="#d9a93f"
-                  stroke="#3b3023" strokeWidth={1.2} />
-          {p.label && <text x={X(p.q) + 7} y={Y(p.p) - 6} fontSize={12}
-                            fontWeight={700} fill="#3b3023">{p.label}</text>}
-        </g>
-      ))}
+      })()}
     </svg>
   );
 }
